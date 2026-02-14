@@ -1,167 +1,91 @@
 /*
-    MOD: PNH_Core 2.0
-    SCRIPT: PNH_MissionManager.c (4_World)
-    DESC: O Cérebro Final do sistema. Controla sorteios, timeouts e limpeza anti-lag.
+    MOD: PNH_Core
+    SCRIPT: PNH_MissionBase.c (4_World)
+    DESC: Classe base proprietária para missões PNH. 
+          Gere os arrays, as variáveis e a limpeza automática de lixo do servidor.
 */
 
-class PNH_MissionManager
+class PNH_MissionBase
 {
-    ref PNH_MissionBase m_ActiveMission;
+    // --- VARIÁVEIS DE CONFIGURAÇÃO ---
+    bool m_MissionExtended;
+    int m_MissionTimeout;
+    float m_MissionZoneOuterRadius;
+    float m_MissionZoneInnerRadius;
     
-    float m_UpdateTimer;
-    int m_MissionState;     // 0 = Aguardando, 1 = Missão Ativa
-    int m_CooldownTimer;
+    // --- VARIÁVEIS DE NARRATIVA ---
+    string m_MissionInformant;
+    string m_MissionMessage1;
+    string m_MissionMessage2;
+    string m_MissionMessage3;
+    string m_MissionLocation;
+    string m_MissionLocationDir;
+    ref TStringArray m_MissionDescription;
 
-    void PNH_MissionManager()
+    // --- VARIÁVEIS DE CONTROLE DE TEMPO ---
+    int m_MissionTime;
+    int m_MsgNum;
+    int m_MsgChkTime;
+    bool m_RewardsSpawned;
+    bool m_ContainerWasTaken;
+
+    // --- POSIÇÃO E OBJETOS (O Loot e os Zumbis) ---
+    vector m_MissionPosition;
+    ref array<Object> m_ObjectList;
+    ref array<CargoBase> m_ObjectCargoList;
+    ref array<Object> m_MissionObjects;
+    ref array<Object> m_MissionAIs;
+    ref array<PlayerBase> m_PlayersInZone; // <--- CORREÇÃO ADICIONADA AQUI
+
+    // --- CONSTRUTOR ---
+    void PNH_MissionBase()
     {
-        m_UpdateTimer = 0;
-        m_MissionState = 0;
-        m_CooldownTimer = 15; // 15 Segundos para iniciar a primeira missão ao ligar o server
+        // Inicializa os arrays de forma segura
+        m_MissionDescription = new TStringArray;
+        m_ObjectList = new array<Object>;
+        m_ObjectCargoList = new array<CargoBase>;
+        m_MissionObjects = new array<Object>;
+        m_MissionAIs = new array<Object>;
+        m_PlayersInZone = new array<PlayerBase>; // <--- CORREÇÃO ADICIONADA AQUI
         
-        PNH_Logger.Log("Missões", "[PNH_CORE] Mission Manager Inicializado. Carregando satélites...");
+        m_MissionTime = 0;
+        m_RewardsSpawned = false;
+        m_ContainerWasTaken = false;
     }
 
-    void OnUpdate(float timeslice)
+    // --- DESTRUTOR (Limpeza Automática Anti-Lag) ---
+    void ~PNH_MissionBase()
     {
-        m_UpdateTimer += timeslice;
+        CleanUp();
+    }
 
-        // Varredura a cada 2 segundos (Anti-Desync)
-        if (m_UpdateTimer >= 2.0)
+    // --- FUNÇÕES VIRTUAIS (As missões vão sobrescrever isto) ---
+    bool IsExtended() { return false; }
+    bool DeployMission() { return false; }
+    void PlayerChecks(PlayerBase player) {}
+    void MissionFinal() {}
+    
+    // --- LIMPEZA DE MEMÓRIA (Remove lixo do mapa) ---
+    void CleanUp()
+    {
+        if (m_MissionObjects)
         {
-            m_UpdateTimer = 0;
-
-            if (m_MissionState == 0) // AGUARDANDO
+            for (int i = 0; i < m_MissionObjects.Count(); i++)
             {
-                m_CooldownTimer -= 2;
-                if (m_CooldownTimer <= 0)
-                {
-                    StartRandomMission();
-                }
+                if (m_MissionObjects.Get(i))
+                    GetGame().ObjectDelete(m_MissionObjects.Get(i));
             }
-            else if (m_MissionState == 1) // MISSÃO RODANDO
+            m_MissionObjects.Clear();
+        }
+
+        if (m_MissionAIs)
+        {
+            for (int j = 0; j < m_MissionAIs.Count(); j++)
             {
-                if (m_ActiveMission)
-                {
-                    m_ActiveMission.m_MissionTime += 2;
-
-                    // 1. Timeout (Acabou o tempo)
-                    if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout)
-                    {
-                        PNH_Logger.Log("Missões", "[PNH_CORE] O tempo da missão esgotou. Abortando.");
-                        
-                        // CORREÇÃO APLICADA AQUI: Substituído o VPPNotification pelo Chat Global PNH
-                        PNH_Utils.SendMessageToAll("[COMANDO PNH] Janela tática fechada. Missão abortada.");
-                        
-                        EndMission();
-                        return;
-                    }
-
-                    // 2. Concluída (Espera o tempo final para deletar os carros/zumbis restantes)
-                    if (m_ActiveMission.m_MsgNum == -1) 
-                    {
-                        if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MsgChkTime)
-                        {
-                            EndMission();
-                            return;
-                        }
-                    }
-
-                    // 3. Verifica a distância dos jogadores
-                    array<Man> players = new array<Man>;
-                    GetGame().GetPlayers(players);
-                    for (int i = 0; i < players.Count(); i++)
-                    {
-                        PlayerBase player = PlayerBase.Cast(players[i]);
-                        if (player && player.IsAlive())
-                        {
-                            m_ActiveMission.PlayerChecks(player);
-                        }
-                    }
-                }
+                if (m_MissionAIs.Get(j))
+                    GetGame().ObjectDelete(m_MissionAIs.Get(j));
             }
+            m_MissionAIs.Clear();
         }
-    }
-
-    void StartRandomMission()
-    {
-        // 1. Carrega as coordenadas
-        PNH_EventsWorldData.Init();
-
-        if (PNH_EventsWorldData.MissionEvents.Count() == 0)
-        {
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada no PNH_EventsWorldData!");
-            m_CooldownTimer = 60;
-            return;
-        }
-
-        // 2. Sorteia um número
-        int idx = Math.RandomIntInclusive(0, PNH_EventsWorldData.MissionEvents.Count() - 1);
-        string eventData = PNH_EventsWorldData.MissionEvents[idx];
-        vector eventPos = PNH_EventsWorldData.MissionPositions[idx];
-
-        // 3. Traduz a frase sorteada (Ex: "Transport Severograd northeast")
-        TStringArray dataArray = new TStringArray;
-        eventData.Split(" ", dataArray);
-        
-        if (dataArray.Count() < 2) return; 
-
-        string missionType = dataArray[0]; 
-        string city = dataArray[1];        
-        string dir = "";
-        if (dataArray.Count() > 2) dir = dataArray[2];         
-
-        // 4. "Fábrica" de Missões PNH (Liga a string do texto à classe da missão)
-        if (missionType == "Transport") m_ActiveMission = new TransportMission();
-        else if (missionType == "Apartment") m_ActiveMission = new ApartmentMission();
-        else if (missionType == "CityMall") m_ActiveMission = new CityMallMission();
-        else if (missionType == "UrbanMall") m_ActiveMission = new UrbanMallMission(); // <-- Adicionado UrbanMall
-        else if (missionType == "Horde") m_ActiveMission = new HordeMission();
-        else if (missionType == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
-        else if (missionType == "Psilos") m_ActiveMission = new PsilosMission();
-        else if (missionType == "Shrooms") m_ActiveMission = new ShroomsMission();
-        else if (missionType == "CityStore") m_ActiveMission = new CityStoreMission();
-        else if (missionType == "Camp") m_ActiveMission = new CampMission();
-        else if (missionType == "FreePigs") m_ActiveMission = new FreePigsMission();
-        else if (missionType == "Ganja") m_ActiveMission = new GanjaMission();
-        else if (missionType == "Graveyard") m_ActiveMission = new GraveyardMission();
-        else if (missionType == "BearHunt") m_ActiveMission = new BearHuntMission();
-        else 
-        {
-            // Sistema à prova de falhas: Se cair numa missão não configurada, ele sorteia outra.
-            PNH_Logger.Log("Missões", "[PNH_CORE] IGNORADO: Missão não configurada: " + missionType + ". Sorteando outra...");
-            m_CooldownTimer = 10;
-            return;
-        }
-
-        PNH_Logger.Log("Missões", "[PNH_CORE] Operação Escolhida: " + missionType + " em " + city);
-
-        // 5. Injeta as coordenadas na Missão
-        m_ActiveMission.m_MissionPosition = eventPos;
-        m_ActiveMission.m_MissionLocation = city;
-        m_ActiveMission.m_MissionLocationDir = dir;
-        m_ActiveMission.m_MissionDescription = dataArray;
-
-        // 6. Dá o Start!
-        if (m_ActiveMission.DeployMission())
-        {
-            m_MissionState = 1; 
-        }
-        else
-        {
-            PNH_Logger.Log("Missões", "[PNH_CORE] Falha (Local inválido). Sorteando outra em 10s...");
-            m_ActiveMission = null;
-            m_CooldownTimer = 10; 
-        }
-    }
-
-    void EndMission()
-    {
-        m_ActiveMission = null; // A MÁGICA DO CLEAN-UP: Destrói a missão e limpa os zumbis/carros.
-        m_MissionState = 0;
-        
-        // TEMPO ENTRE MISSÕES
-        m_CooldownTimer = 1800; // 30 Minutos (1800 segundos) de intervalo até a próxima missão
-        
-        PNH_Logger.Log("Missões", "[PNH_CORE] Operação arquivada. Mapa limpo.");
     }
 }

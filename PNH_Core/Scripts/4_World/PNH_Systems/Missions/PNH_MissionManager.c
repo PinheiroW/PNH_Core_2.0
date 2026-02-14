@@ -1,8 +1,7 @@
 /*
     MOD: PNH_Core 2.0
     SCRIPT: PNH_MissionManager.c (4_World)
-    DESC: O Cérebro do sistema. Controla o tempo, sorteia as missões,
-          faz o tracking dos jogadores e finaliza os eventos.
+    DESC: O Cérebro Final do sistema. Controla sorteios, timeouts e limpeza anti-lag.
 */
 
 class PNH_MissionManager
@@ -10,53 +9,47 @@ class PNH_MissionManager
     ref PNH_MissionBase m_ActiveMission;
     
     float m_UpdateTimer;
-    int m_MissionState;     // 0 = Aguardando (Cooldown), 1 = Missão Ativa
-    int m_CooldownTimer;    // Tempo até a próxima missão nascer
+    int m_MissionState;     
+    int m_CooldownTimer;
 
     void PNH_MissionManager()
     {
         m_UpdateTimer = 0;
         m_MissionState = 0;
-        m_CooldownTimer = 60; // Para testes, a primeira missão nasce em 60 segundos após o server ligar
+        m_CooldownTimer = 15; 
         
-        PNH_Logger.Log("Missões", "[PNH_CORE] Mission Manager Inicializado. Aguardando para iniciar missões...");
+        PNH_Logger.Log("Missões", "[PNH_CORE] Mission Manager Inicializado. Carregando satélites...");
     }
 
-    // Função chamada constantemente pelo servidor
     void OnUpdate(float timeslice)
     {
         m_UpdateTimer += timeslice;
 
-        // OTIMIZAÇÃO: Só roda a lógica a cada 2 segundos para não pesar o servidor
         if (m_UpdateTimer >= 2.0)
         {
             m_UpdateTimer = 0;
 
-            if (m_MissionState == 0) // ESTADO: AGUARDANDO
+            if (m_MissionState == 0)
             {
                 m_CooldownTimer -= 2;
-                if (m_CooldownTimer <= 0)
-                {
-                    StartRandomMission();
-                }
+                if (m_CooldownTimer <= 0) StartRandomMission();
             }
-            else if (m_MissionState == 1) // ESTADO: MISSÃO RODANDO
+            else if (m_MissionState == 1)
             {
                 if (m_ActiveMission)
                 {
                     m_ActiveMission.m_MissionTime += 2;
 
-                    // 1. Verifica se o tempo da missão acabou (Timeout)
+                    // 1. Timeout (Acabou o tempo)
                     if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout)
                     {
-                        PNH_Logger.Log("Missões", "[PNH_CORE] O tempo da missão esgotou. Iniciando protocolo de limpeza...");
-                        VPPNotification.Push("COMANDO PNH", "Tempo esgotado. Missão abortada.", "set:dayz_gui_vpp image:vpp_icon_mission", 16711680, 7.0);
+                        PNH_Logger.Log("Missões", "[PNH_CORE] O tempo da missão esgotou. Abortando.");
+                        PNH_Utils.SendMessageToAll("[COMANDO PNH] Janela tática fechada. Missão abortada.");
                         EndMission();
                         return;
                     }
 
-                    // 2. Verifica se a missão já acabou com Vitória
-                    // (Aguardando para limpar o mapa X segundos depois do sucesso)
+                    // 2. Concluída 
                     if (m_ActiveMission.m_MsgNum == -1) 
                     {
                         if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MsgChkTime)
@@ -66,7 +59,7 @@ class PNH_MissionManager
                         }
                     }
 
-                    // 3. Verifica a distância dos jogadores (Trigger e Checks)
+                    // 3. Verifica a distância dos jogadores
                     array<Man> players = new array<Man>;
                     GetGame().GetPlayers(players);
                     for (int i = 0; i < players.Count(); i++)
@@ -74,7 +67,6 @@ class PNH_MissionManager
                         PlayerBase player = PlayerBase.Cast(players[i]);
                         if (player && player.IsAlive())
                         {
-                            // Envia o jogador para a missão fazer a matemática de distância
                             m_ActiveMission.PlayerChecks(player);
                         }
                     }
@@ -85,28 +77,75 @@ class PNH_MissionManager
 
     void StartRandomMission()
     {
-        PNH_Logger.Log("Missões", "[PNH_CORE] Preparando nova operação...");
+        PNH_EventsWorldData.Init();
 
-        // NOTA: Na Fase 3, colocaremos aqui o Sorteio do EventsWorldData.
-        // Por enquanto, a estrutura já está pronta para receber a missão escolhida.
+        if (PNH_EventsWorldData.MissionEvents.Count() == 0)
+        {
+            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada no PNH_EventsWorldData!");
+            m_CooldownTimer = 60;
+            return;
+        }
+
+        int idx = Math.RandomIntInclusive(0, PNH_EventsWorldData.MissionEvents.Count() - 1);
+        string eventData = PNH_EventsWorldData.MissionEvents[idx];
+        vector eventPos = PNH_EventsWorldData.MissionPositions[idx];
+
+        TStringArray dataArray = new TStringArray;
+        eventData.Split(" ", dataArray);
         
-        // Exemplo do que vai acontecer aqui em breve:
-        // m_ActiveMission = new TransportMission();
-        // m_ActiveMission.DeployMission();
+        if (dataArray.Count() < 2) return; 
 
-        m_MissionState = 1; // Muda o estado para "Rodando"
+        string missionType = dataArray[0]; 
+        string city = dataArray[1];        
+        string dir = "";
+        if (dataArray.Count() > 2) dir = dataArray[2];         
+
+        // A CORREÇÃO PRINCIPAL: As missões de verdade
+        if (missionType == "Transport") m_ActiveMission = new TransportMission();
+        else if (missionType == "Apartment") m_ActiveMission = new ApartmentMission();
+        else if (missionType == "CityMall") m_ActiveMission = new CityMallMission();
+        else if (missionType == "UrbanMall") m_ActiveMission = new UrbanMallMission();
+        else if (missionType == "Horde") m_ActiveMission = new HordeMission();
+        else if (missionType == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
+        else if (missionType == "Psilos") m_ActiveMission = new PsilosMission();
+        else if (missionType == "Shrooms") m_ActiveMission = new ShroomsMission();
+        else if (missionType == "CityStore") m_ActiveMission = new CityStoreMission();
+        else if (missionType == "Camp") m_ActiveMission = new CampMission();
+        else if (missionType == "FreePigs") m_ActiveMission = new FreePigsMission();
+        else if (missionType == "Ganja") m_ActiveMission = new GanjaMission();
+        else if (missionType == "Graveyard") m_ActiveMission = new GraveyardMission();
+        else if (missionType == "BearHunt") m_ActiveMission = new BearHuntMission();
+        else 
+        {
+            PNH_Logger.Log("Missões", "[PNH_CORE] IGNORADO: Missão não configurada: " + missionType);
+            m_CooldownTimer = 10;
+            return;
+        }
+
+        PNH_Logger.Log("Missões", "[PNH_CORE] Operação Escolhida: " + missionType + " em " + city);
+
+        m_ActiveMission.m_MissionPosition = eventPos;
+        m_ActiveMission.m_MissionLocation = city;
+        m_ActiveMission.m_MissionLocationDir = dir;
+        m_ActiveMission.m_MissionDescription = dataArray;
+
+        if (m_ActiveMission.DeployMission())
+        {
+            m_MissionState = 1; 
+        }
+        else
+        {
+            PNH_Logger.Log("Missões", "[PNH_CORE] Falha (Local inválido). Sorteando outra em 10s...");
+            m_ActiveMission = null;
+            m_CooldownTimer = 10; 
+        }
     }
 
     void EndMission()
     {
-        // A MÁGICA ACONTECE AQUI:
-        // Ao igualar a nulo, o DayZ chama o Destrutor (~PNH_MissionBase) 
-        // e limpa todos os carros e zumbis automaticamente do mapa!
         m_ActiveMission = null; 
-        
         m_MissionState = 0;
-        m_CooldownTimer = 1800; // 30 Minutos de intervalo até a próxima missão nascer
-        
-        PNH_Logger.Log("Missões", "[PNH_CORE] Missão finalizada e mapa limpo. Aguardando próximo ciclo.");
+        m_CooldownTimer = 1800; 
+        PNH_Logger.Log("Missões", "[PNH_CORE] Operação arquivada. Mapa limpo.");
     }
 }
