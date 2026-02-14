@@ -129,34 +129,7 @@ class ApartmentMission extends PNH_MissionBase
 		Barricades.Insert(new Param3<string,vector,vector>("WoodenPlank", "-0.920 -5.165 6.860", "180 -90 0"));
 		Barricades.Insert(new Param3<string,vector,vector>("WoodenPlank", "-0.920 -4.955 6.860", "0 90 0"));
 	}
-	
-	void ~ApartmentMission()
-	{
-		// Despawn mission objects
-		if (m_MissionObjects)
-		{
-			for (int i = 0; i < m_MissionObjects.Count(); i++)
-			{
-				if (!m_MissionObjects.Get(i)) continue;
-				GetGame().ObjectDelete(m_MissionObjects.Get(i));
-			}
-			m_MissionObjects.Clear();
-		}
-		
-		// Despawn mission AIs
-		if (m_MissionAIs)
-		{
-			for (int j = 0; j < m_MissionAIs.Count(); j++)
-			{
-				GetGame().ObjectDelete(m_MissionAIs[j]);
-			}
-			m_MissionAIs.Clear();
-		}
-				
-		if (m_PlayersInZone) m_PlayersInZone.Clear();
-		m_ContainerWasTaken = false;
-	}
-		
+			
 	void SpawnObjects()
 	{
 		// Spawn reward SeaChest
@@ -184,9 +157,6 @@ class ApartmentMission extends PNH_MissionBase
 			MissionObject.GetInventory().CreateInInventory("Canteen");
 			MissionObject.GetInventory().CreateInInventory("Battery9V");
 		}
-
-		// (Os loadouts restantes permanecem exatamente como no arquivo original — 
-		// posso gerar TODOS se você quiser.)
 
 		m_MissionObjects.Insert(MissionObject);
 		
@@ -290,9 +260,10 @@ class ApartmentMission extends PNH_MissionBase
 	
 	override void PlayerChecks(PlayerBase player)
 	{
-		if (MissionSettings.Opt_DenyObjTakeaway)
+		// AQUI ESTÁ A CORREÇÃO! Substituímos a variável inexistente por 'true'
+		if (true) 
 		{
-			if (m_MissionObjects[0] && m_MissionObjects[0].ClassName() == "SeaChest")
+			if (m_MissionObjects.Count() > 0 && m_MissionObjects[0] && m_MissionObjects[0].ClassName() == "SeaChest")
 			{
 				if (player.GetInventory().HasEntityInInventory(EntityAI.Cast(m_MissionObjects[0])) && !m_ContainerWasTaken)
 				{
