@@ -1,4 +1,4 @@
-class PlaneCrashMission extends SurvivorMissions
+class PlaneCrashMission extends PNH_MissionBase
 {
 	Object CrashedC130;
 	int MsgDlyFinish = 60;					

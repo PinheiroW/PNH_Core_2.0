@@ -1,4 +1,4 @@
-class ShroomsMission extends SurvivorMissions
+class ShroomsMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 
@@ -102,7 +102,7 @@ class ShroomsMission extends SurvivorMissions
 		} 
         else 
         {
-            if ( EventsWorldData.GetBuildingsAtLoc("Land_City_Hospital", m_MissionDescription[3], ExtendedPosList ) )
+            if ( PNH_EventsWorldData.GetBuildingsAtLoc("Land_City_Hospital", m_MissionDescription[3], ExtendedPosList ) )
             {
                 m_MissionPosition = ExtendedPosList.GetRandomElement();
                 GetGame().GetObjectsAtPosition( m_MissionPosition , 10.0 , m_ObjectList , m_ObjectCargoList );

@@ -1,4 +1,4 @@
-class GanjaMission extends SurvivorMissions
+class GanjaMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 

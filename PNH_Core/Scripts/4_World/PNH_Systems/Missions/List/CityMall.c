@@ -1,4 +1,4 @@
-class CityMallMission extends SurvivorMissions
+class CityMallMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject;

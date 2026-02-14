@@ -1,4 +1,4 @@
-class HordeMission extends SurvivorMissions
+class HordeMission extends PNH_MissionBase
 {
 	Object MissionBuilding; 
 	int HordeDensity = 60;	

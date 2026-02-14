@@ -1,4 +1,4 @@
-class ApartmentMission extends SurvivorMissions
+class ApartmentMission extends PNH_MissionBase
 {
 	// Mission related entities 
 	Object MissionBuilding;

@@ -1,4 +1,4 @@
-class FreePigsMission extends SurvivorMissions
+class FreePigsMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 

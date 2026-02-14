@@ -1,4 +1,4 @@
-class GraveyardMission extends SurvivorMissions
+class GraveyardMission extends PNH_MissionBase
 {
 	Object MissionObject; // A Cruz de Madeira
 	

@@ -1,4 +1,4 @@
-class BearHuntMission extends SurvivorMissions
+class BearHuntMission extends PNH_MissionBase
 {
 	ItemBase MissionObject;
 	Object MissionBuilding;

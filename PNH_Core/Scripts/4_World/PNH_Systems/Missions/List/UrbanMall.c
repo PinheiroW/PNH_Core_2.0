@@ -1,4 +1,4 @@
-class UrbanMallMission extends SurvivorMissions
+class UrbanMallMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; // DryBag Preta (Kit Técnico)
@@ -113,7 +113,7 @@ class UrbanMallMission extends SurvivorMissions
                 return true;
             }
 		} else {
-            if ( EventsWorldData.GetBuildingsAtLoc("Land_City_PoliceStation", m_MissionDescription[3], ExtendedPosList ))
+            if ( PNH_EventsWorldData.GetBuildingsAtLoc("Land_City_PoliceStation", m_MissionDescription[3], ExtendedPosList ))
             {
                 m_MissionPosition = ExtendedPosList.GetRandomElement();
                 GetGame().GetObjectsAtPosition( m_MissionPosition , 1.0 , m_ObjectList , m_ObjectCargoList );
