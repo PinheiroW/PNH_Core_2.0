@@ -1,0 +1,1 @@
+Documentação completa em Português para o PNH_Core 2.0.
