@@ -1,0 +1,103 @@
+class CityStoreMission extends SurvivorMissions
+{
+	Object MissionBuilding;
+	ItemBase MissionObject; 
+	int ReqDocAmount = 10;
+	int ReqRagAmount = 5;
+	int MsgDlyFinish = 60;
+	ref array<vector> ExtendedPosList = new array<vector>;
+	ref array<string> InfectedTypes = new array<string>;
+
+	vector TargetPosition = "1.52 -4.51 2.16";   
+	vector RewardsPosition = "-3.46 -5.72 6.63"; 
+
+    string m_WinnerName = "Desconhecido";
+    bool m_IsVictory = false; 
+	
+	override bool IsExtended() return true; 
+	
+	void CityStoreMission()
+	{
+		m_MissionExtended = true;
+		m_MissionTimeout = 3600;			
+		m_MissionZoneOuterRadius = 120.0;	
+		m_MissionZoneInnerRadius = 5.0; 
+		m_MissionInformant = "PNH Corp. Intel"; 
+		m_MissionMessage1 = "[RADIO PNH] ALERTA: Loja de Departamentos servindo de arquivo morto foi comprometida.";
+		m_MissionMessage2 = "Recupere 10 Documentos e 5 Uniformes na mochila PNH.";
+		m_MissionMessage3 = "[RADIO PNH] Entregue na Delegacia de ** " + m_MissionLocation + " **.";
+		InfectedTypes.Insert("ZmbM_SoldierNormal_Heavy");
+	}
+
+    void SpawnRewards()
+    {
+        if (!MissionBuilding) return;
+        ItemBase Chest = ItemBase.Cast( GetGame().CreateObject( "SeaChest", MissionBuilding.ModelToWorld( RewardsPosition ), false, false, false ) );
+        if (Chest)
+        {
+            Chest.GetInventory().CreateInInventory("VSS");
+            Chest.GetInventory().CreateInInventory("Mag_VSS_10Rnd");
+            Chest.GetInventory().CreateInInventory("PSO1Optic");
+            m_MissionObjects.Insert( Chest );
+        }
+    }
+
+    void SpawnCollectionItems()
+    {
+        if (!MissionBuilding) return;
+        for (int d = 0; d < ReqDocAmount; d++) GetGame().CreateObject("Paper", MissionBuilding.ModelToWorld("0 -4 0"), false, false, false);
+        for (int r = 0; r < ReqRagAmount; r++) GetGame().CreateObject("Rag", MissionBuilding.ModelToWorld("2 -4 0"), false, false, false);
+    }
+
+	override void MissionFinal()
+	{	
+        if (m_IsVictory) PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_WinnerName + " entregou os documentos na Loja!");
+		m_RewardsSpawned = true; m_MsgNum = -1;
+	}
+	
+	override void PlayerChecks( PlayerBase player )
+	{
+		if ( !m_MissionExtended && MissionObject )
+		{
+            if ( vector.Distance( MissionObject.GetPosition(), m_MissionPosition ) < 5.0 )
+            {
+                int docCount = 0; int ragCount = 0;
+                CargoBase cargo = MissionObject.GetInventory().GetCargo();
+                if (cargo) {
+                    for ( int i = 0; i < cargo.GetItemCount(); i++ )
+                    {
+                        if ( cargo.GetItem(i).GetType() == "Paper" ) docCount++;
+                        if ( cargo.GetItem(i).GetType() == "Rag" ) ragCount++;
+                    }
+                }
+                if ( docCount >= ReqDocAmount && ragCount >= ReqRagAmount )
+                {
+                    m_IsVictory = true;
+                    if (player.GetIdentity()) m_WinnerName = player.GetIdentity().GetName();
+                    GetGame().ObjectDelete( MissionObject );
+                    SpawnRewards();
+                    MissionFinal();
+                }
+            }
+		}		
+	}
+	
+	override bool DeployMission()
+	{
+		if ( m_MissionExtended )
+		{			
+			GetGame().GetObjectsAtPosition( m_MissionPosition , 1.0 , m_ObjectList , m_ObjectCargoList );
+			for ( int i=0; i < m_ObjectList.Count(); i++ )
+				if ( m_ObjectList.Get(i).GetType() == "Land_City_Store" ) { MissionBuilding = m_ObjectList.Get(i); break; }
+			
+            if (MissionBuilding) {
+                MissionObject = ItemBase.Cast( GetGame().CreateObject( "CoyoteBackpack_Black", MissionBuilding.ModelToWorld( TargetPosition ), false, false, false ) );
+                m_MissionObjects.Insert( MissionObject );
+                SpawnCollectionItems();
+                PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Reserva Estratégica em " + m_MissionLocation);
+                return true;
+            }
+		} 
+        return false;
+	}
+}
