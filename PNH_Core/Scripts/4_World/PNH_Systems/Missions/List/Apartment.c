@@ -262,7 +262,7 @@ class ApartmentMission extends PNH_MissionBase
 		}
 	}
 	
-	void MissionFinal()
+	override void MissionFinal()
 	{
 		Building Tenement = Building.Cast(MissionBuilding);
 
@@ -288,7 +288,7 @@ class ApartmentMission extends PNH_MissionBase
 		m_MsgChkTime = m_MissionTime + MsgDlyFinish;
 	}
 	
-	void PlayerChecks(PlayerBase player)
+	override void PlayerChecks(PlayerBase player)
 	{
 		if (MissionSettings.Opt_DenyObjTakeaway)
 		{
@@ -305,7 +305,7 @@ class ApartmentMission extends PNH_MissionBase
 	
 	void UpdateBots(float dt) {}
 			
-	bool DeployMission()
+	override bool DeployMission()
 	{
 		GetGame().GetObjectsAtPosition(m_MissionPosition, 1.0, m_ObjectList, m_ObjectCargoList);
 
