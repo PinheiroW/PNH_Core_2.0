@@ -3,8 +3,6 @@ class PNH_MissionManager
     static PNH_MissionManager m_Instance;
 
     ref PNH_MissionBase m_ActiveMission;
-    ref array<ref PNH_MissionConfig> m_MissionsPool;
-    
     float m_UpdateTimer;
     int m_MissionState;     
     int m_CooldownTimer;
@@ -14,17 +12,20 @@ class PNH_MissionManager
         m_Instance = this; 
         m_UpdateTimer = 0;
         m_MissionState = 0;
+        
+        // Carrega as configurações do JSON
+        PNH_MissionSettings.Load();
+        
+        // Espera apenas 15 segundos para lançar a primeira missão quando o servidor ligar
         m_CooldownTimer = 15; 
-        m_MissionsPool = new array<ref PNH_MissionConfig>;
-        ReloadMissions();
     }
 
     static PNH_MissionManager GetInstance() { return m_Instance; }
 
     void ReloadMissions()
     {
-        PNH_JSONLoader.Carregar(m_MissionsPool);
-        PNH_Logger.Log("Missões", "[PNH_CORE] Banco de dados JSON sincronizado. Total: " + m_MissionsPool.Count() + " missões.");
+        PNH_MissionSettings.Load();
+        PNH_Logger.Log("Missões", "[PNH_CORE] Configurações Mestre recarregadas com sucesso.");
     }
 
     void OnUpdate(float timeslice)
@@ -43,7 +44,10 @@ class PNH_MissionManager
             else if (m_MissionState == 1 && m_ActiveMission)
             {
                 m_ActiveMission.m_MissionTime += 2;
-                if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) EndMission();
+                if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) 
+                {
+                    EndMission();
+                }
                 else
                 {
                     array<Man> players = new array<Man>;
@@ -60,47 +64,58 @@ class PNH_MissionManager
 
     void StartRandomMission()
     {
-        if (m_MissionsPool.Count() == 0)
+        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+        string selectedMission = "";
+
+        if (config.MissoesAtivas.Count() == 0)
         {
+            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma missão ativa no JSON de Settings!");
             m_CooldownTimer = 60; 
             return;
         }
 
-        int idx = Math.RandomIntInclusive(0, m_MissionsPool.Count() - 1);
-        ref PNH_MissionConfig config = m_MissionsPool.Get(idx);
+        // Lê se o Admin quer testar uma missão específica ou se é aleatório
+        if (config.DebugMission != "") selectedMission = config.DebugMission;
+        else selectedMission = config.MissoesAtivas.GetRandomElement();
 
-        if (!config) return;
-
-        if (config.Tipo == "Camp") m_ActiveMission = new CampMission();
-        else if (config.Tipo == "Horde") m_ActiveMission = new HordeMission();
-        else if (config.Tipo == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
-        else if (config.Tipo == "Apartment") m_ActiveMission = new ApartmentMission();
-        else return;
-
-        // --- A PONTE MÁGICA: Passando os dados do JSON para a missão ---
-        m_ActiveMission.m_Config = config; 
-        
-        m_ActiveMission.m_MissionPosition = config.Posicao;
-        m_ActiveMission.m_MissionLocation = config.Local;
-        m_ActiveMission.m_MissionInformant = config.Informante;
-        
-        if (config.Mensagens.Count() >= 3)
+        // Instancia a classe em C++ baseada no nome
+        if (selectedMission == "Camp") m_ActiveMission = new CampMission();
+        else if (selectedMission == "Horde") m_ActiveMission = new HordeMission();
+        else if (selectedMission == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
+        else if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
+        else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
+        else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission();
+        else if (selectedMission == "Shrooms") m_ActiveMission = new ShroomsMission();
+        else if (selectedMission == "Psilos") m_ActiveMission = new PsilosMission();
+        else if (selectedMission == "UrbanMall") m_ActiveMission = new UrbanMallMission();
+        else if (selectedMission == "Graveyard") m_ActiveMission = new GraveyardMission();
+        else 
         {
-            m_ActiveMission.m_MissionMessage1 = config.Mensagens[0];
-            m_ActiveMission.m_MissionMessage2 = config.Mensagens[1];
-            m_ActiveMission.m_MissionMessage3 = config.Mensagens[2];
+            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida na lista: " + selectedMission);
+            m_CooldownTimer = 30;
+            return;
         }
 
         if (m_ActiveMission.DeployMission())
         {
             m_MissionState = 1;
-            PNH_Utils.SendMessageToAll("[RADIO PNH] Alguém na escuta? Recebemos um sinal!");
+            
+            if (config.UsarPDA)
+            {
+                // Notificação Global rápida para o ecrã do PDA
+                GPDA_ServerManager.GetInstance().AddChatMessage("PNH_CORE", "Comando PNH", "[ALERTA] Novo contrato disponível. Verifique o seu PDA.");
+            }
+            else
+            {
+                PNH_Utils.SendMessageToAll("[RADIO PNH] Alguém na escuta? Recebemos um sinal!");
+            }
+
             GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendMissionStory, 4000, false);
         }
         else
         {
             m_ActiveMission = null;
-            m_CooldownTimer = 10;
+            m_CooldownTimer = 10; // Falhou em gerar (ex: não encontrou prédio), tenta rápido de novo
         }
     }
 
@@ -108,9 +123,21 @@ class PNH_MissionManager
     {
         if (m_ActiveMission)
         {
-            PNH_Utils.SendMessageToAll("[INFORMANTE] " + m_ActiveMission.m_MissionInformant + ": " + m_ActiveMission.m_MissionMessage1);
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 6000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage2);
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 12000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage3);
+            PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+            
+            if (config.UsarPDA)
+            {
+                // Concatena a história inteira e envia para ficar gravado no histórico do PDA
+                string fullMessage = m_ActiveMission.m_MissionMessage1 + " " + m_ActiveMission.m_MissionMessage2 + " " + m_ActiveMission.m_MissionMessage3;
+                GPDA_ServerManager.GetInstance().AddChatMessage("PNH_CORE", m_ActiveMission.m_MissionInformant, fullMessage);
+            }
+            else
+            {
+                // Modo Clássico (Avisos de Rádio sequenciais)
+                PNH_Utils.SendMessageToAll("[" + m_ActiveMission.m_MissionInformant + "] " + m_ActiveMission.m_MissionMessage1);
+                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 6000, false, "[" + m_ActiveMission.m_MissionInformant + "] " + m_ActiveMission.m_MissionMessage2);
+                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 12000, false, "[" + m_ActiveMission.m_MissionInformant + "] " + m_ActiveMission.m_MissionMessage3);
+            }
         }
     }
 
@@ -119,6 +146,10 @@ class PNH_MissionManager
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
         m_ActiveMission = null; 
         m_MissionState = 0;
-        m_CooldownTimer = 1800; 
+        
+        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+        m_CooldownTimer = config.TempoEntreMissoes * 60; // Volta para o tempo longo configurado pelo Admin
+        
+        PNH_Logger.Log("Missões", "[PNH_CORE] Operação encerrada. Próxima em " + config.TempoEntreMissoes + " minutos.");
     }
 }
