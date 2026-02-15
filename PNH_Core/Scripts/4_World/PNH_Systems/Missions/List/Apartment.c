@@ -54,8 +54,7 @@ class ApartmentMission extends PNH_MissionBase
             MissionObject.Close(); 
             m_MissionObjects.Insert(MissionObject); 
 
-            // Deixei o loot como estava para manter simples neste primeiro teste, 
-            // no próximo passo podemos ler isso do JSON também!
+            // Na próxima fase podemos migrar este loot para ler do JSON também!
             int sel = Math.RandomIntInclusive(0, 2);
             EntityAI weapon;
             if (sel == 0) {
@@ -216,6 +215,14 @@ class ApartmentMission extends PNH_MissionBase
             
     override bool DeployMission()
     {
+        // --- TRAVA DE SEGURANÇA ANTI-CRASH ---
+        if (Spawnpoints.Count() == 0) 
+        {
+            PNH_Logger.Error("Missões", "ERRO CRÍTICO: A missão não pôde iniciar porque o JSON não foi carregado ou está vazio.");
+            return false; 
+        }
+        // -------------------------------------
+
         GetGame().GetObjectsAtPosition(m_MissionPosition, 1.5, m_ObjectList, m_ObjectCargoList);
         for (int i = 0; i < m_ObjectList.Count(); i++)
         {
