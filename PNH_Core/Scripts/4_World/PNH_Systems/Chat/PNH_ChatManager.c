@@ -1,45 +1,48 @@
-/*
-    MOD: PNH_Core
-    SCRIPT: PNH_ChatManager.c (4_World)
-    DESC: Processa comandos de chat iniciados por "/"
-*/
-
 class PNH_ChatManager
 {
-    // Verifica se a mensagem é um comando (começa com /)
-    static bool IsCommand(string text)
+    static bool HandleCommand(PlayerBase player, string message)
     {
-        return (text.IndexOf("/") == 0); // Retorna TRUE se o primeiro caractere for /
-    }
+        if (message.Length() < 1) return false;
 
-    // A Mágica acontece aqui
-    static void HandleCommand(PlayerBase player, string text)
-    {
-        if (!player || !player.GetIdentity()) return;
+        string prefix = message.Substring(0, 1);
+        if (prefix != "/" && prefix != "!") return false;
 
-        // 1. Remove o "/" e transforma em minúsculo para facilitar (Ex: "/BemVindo" vira "bemvindo")
-        string cleanText = text.Substring(1, text.Length() - 1);
-        cleanText.ToLower();
-        
-        // 2. Separa o comando dos argumentos (caso tenhamos algo como "/banir Fulano")
+        string commandLine = message.Substring(1, message.Length() - 1);
         TStringArray args = new TStringArray;
-        cleanText.Split(" ", args);
-        string command = args[0]; // O primeiro item é o comando principal
+        commandLine.Split(" ", args);
 
-        // 3. Loga no console para sabermos que funcionou
-        PNH_Logger.Log("Chat", "Jogador " + player.GetIdentity().GetName() + " usou o comando: " + command);
+        if (args.Count() == 0) return false;
 
-        // --- AQUI ENTRA O ROTEADOR DE COMANDOS ---
-        // No futuro, os outros mods vão se registrar aqui. 
-        // Por enquanto, vamos fazer um teste manual direto ("Hardcoded").
-        
-        if (command == "pnh")
+        string command = args.Get(0);
+        command.ToLower();
+
+        // COMANDO: reload_mission
+        if (command == "reload_mission")
         {
-            // Teste de conexão total: Chat -> Core -> Discord
-            PNH_Discord.Send("Comando /pnh", "O jogador **" + player.GetIdentity().GetName() + "** testou o chat com sucesso!", 16753920);
+            string steamID = PNH_Utils.GetSteamID(player);
             
-            // Avisa o jogador (Mensagem no chat local apenas para ele)
-            NotificationSystem.SendNotificationToPlayerExtended(player, 5, "PNH Core", "Comando recebido com sucesso!", "set:dayz_gui image:tutorials");
+            if (PNH_CoreConfig.IsSuperAdmin(steamID))
+            {
+                // CORREÇÃO: Busca a instância global do Manager diretamente
+                PNH_MissionManager manager = PNH_MissionManager.GetInstance();
+                if (manager)
+                {
+                    manager.ReloadMissions();
+                    PNH_Utils.SendMessage(player, "[PNH CORE] Sucesso: Missões JSON recarregadas.");
+                    PNH_Logger.Log("Admin", "Admin " + player.GetIdentity().GetName() + " executou reload_mission.");
+                }
+                else
+                {
+                    PNH_Utils.SendMessage(player, "[PNH CORE] Erro: Mission Manager não está online.");
+                }
+            }
+            else
+            {
+                PNH_Utils.SendMessage(player, "[PNH CORE] Acesso Negado: Você não é administrador.");
+            }
+            return true;
         }
+
+        return false;
     }
 }

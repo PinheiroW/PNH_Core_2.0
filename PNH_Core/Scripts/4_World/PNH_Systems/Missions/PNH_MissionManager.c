@@ -1,6 +1,9 @@
 class PNH_MissionManager
 {
+    static PNH_MissionManager m_Instance;
+
     ref PNH_MissionBase m_ActiveMission;
+    ref array<ref PNH_MissionConfig> m_MissionsPool;
     
     float m_UpdateTimer;
     int m_MissionState;     
@@ -8,11 +11,20 @@ class PNH_MissionManager
 
     void PNH_MissionManager()
     {
+        m_Instance = this; 
         m_UpdateTimer = 0;
         m_MissionState = 0;
         m_CooldownTimer = 15; 
-        
-        PNH_Logger.Log("Missões", "[PNH_CORE] Mission Manager Inicializado. Carregando satélites...");
+        m_MissionsPool = new array<ref PNH_MissionConfig>;
+        ReloadMissions();
+    }
+
+    static PNH_MissionManager GetInstance() { return m_Instance; }
+
+    void ReloadMissions()
+    {
+        PNH_JSONLoader.Carregar(m_MissionsPool);
+        PNH_Logger.Log("Missões", "[PNH_CORE] Banco de dados JSON sincronizado. Total: " + m_MissionsPool.Count() + " missões.");
     }
 
     void OnUpdate(float timeslice)
@@ -28,28 +40,18 @@ class PNH_MissionManager
                 m_CooldownTimer -= 2;
                 if (m_CooldownTimer <= 0) StartRandomMission();
             }
-            else if (m_MissionState == 1)
+            else if (m_MissionState == 1 && m_ActiveMission)
             {
-                if (m_ActiveMission)
+                m_ActiveMission.m_MissionTime += 2;
+                if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) EndMission();
+                else
                 {
-                    m_ActiveMission.m_MissionTime += 2;
-
-                    if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout)
+                    array<Man> players = new array<Man>;
+                    GetGame().GetPlayers(players);
+                    for (int i = 0; i < players.Count(); i++)
                     {
-                        PNH_Logger.Log("Missões", "[PNH_CORE] Operação Abortada: Tempo esgotado.");
-                        EndMission();
-                    }
-                    else
-                    {
-                        // CORREÇÃO: Lógica nativa para verificar jogadores no servidor
-                        array<Man> players = new array<Man>;
-                        GetGame().GetPlayers(players);
-
-                        for (int i = 0; i < players.Count(); i++)
-                        {
-                            PlayerBase p = PlayerBase.Cast(players.Get(i));
-                            if (p) m_ActiveMission.PlayerChecks(p);
-                        }
+                        PlayerBase p = PlayerBase.Cast(players.Get(i));
+                        if (p) m_ActiveMission.PlayerChecks(p);
                     }
                 }
             }
@@ -58,63 +60,47 @@ class PNH_MissionManager
 
     void StartRandomMission()
     {
-        PNH_EventsWorldData.Init();
-
-        if (PNH_EventsWorldData.MissionEvents.Count() == 0)
+        if (m_MissionsPool.Count() == 0)
         {
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada no PNH_EventsWorldData!");
-            m_CooldownTimer = 60;
+            m_CooldownTimer = 60; 
             return;
         }
 
-        int idx = Math.RandomIntInclusive(0, PNH_EventsWorldData.MissionEvents.Count() - 1);
-        string eventData = PNH_EventsWorldData.MissionEvents[idx];
-        vector eventPos = PNH_EventsWorldData.MissionPositions[idx];
+        int idx = Math.RandomIntInclusive(0, m_MissionsPool.Count() - 1);
+        ref PNH_MissionConfig config = m_MissionsPool.Get(idx);
 
-        TStringArray dataArray = new TStringArray;
-        eventData.Split(" ", dataArray);
-        
-        if (dataArray.Count() < 2) return; 
+        if (!config) return;
 
-        string missionType = dataArray[0]; 
-        string city = dataArray[1];        
-        string dir = "";
-        if (dataArray.Count() > 2) dir = dataArray[2];         
-
-        if (missionType == "Transport") m_ActiveMission = new TransportMission();
-        else if (missionType == "Apartment") m_ActiveMission = new ApartmentMission();
-        else if (missionType == "CityMall") m_ActiveMission = new CityMallMission();
-        else if (missionType == "UrbanMall") m_ActiveMission = new UrbanMallMission();
-        else if (missionType == "Horde") m_ActiveMission = new HordeMission();
-        else if (missionType == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
-        else if (missionType == "Psilos") m_ActiveMission = new PsilosMission();
-        else if (missionType == "Shrooms") m_ActiveMission = new ShroomsMission();
-        else if (missionType == "CityStore") m_ActiveMission = new CityStoreMission();
-        else if (missionType == "Camp") m_ActiveMission = new CampMission();
-        else if (missionType == "FreePigs") m_ActiveMission = new FreePigsMission();
-        else if (missionType == "Ganja") m_ActiveMission = new GanjaMission();
-        else if (missionType == "Graveyard") m_ActiveMission = new GraveyardMission();
-        else if (missionType == "BearHunt") m_ActiveMission = new BearHuntMission();
+        if (config.Tipo == "Camp") m_ActiveMission = new CampMission();
+        else if (config.Tipo == "Horde") m_ActiveMission = new HordeMission();
+        else if (config.Tipo == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
+        else if (config.Tipo == "Apartment") m_ActiveMission = new ApartmentMission();
         else return;
 
-        PNH_Logger.Log("Missões", "[PNH_CORE] Operação Escolhida: " + missionType + " em " + city + " | POS: " + eventPos.ToString());
-
-        m_ActiveMission.m_MissionPosition = eventPos;
-        m_ActiveMission.m_MissionLocation = city;
-        m_ActiveMission.m_MissionLocationDir = dir;
-        m_ActiveMission.m_MissionDescription = dataArray;
+        // --- A PONTE MÁGICA: Passando os dados do JSON para a missão ---
+        m_ActiveMission.m_Config = config; 
+        
+        m_ActiveMission.m_MissionPosition = config.Posicao;
+        m_ActiveMission.m_MissionLocation = config.Local;
+        m_ActiveMission.m_MissionInformant = config.Informante;
+        
+        if (config.Mensagens.Count() >= 3)
+        {
+            m_ActiveMission.m_MissionMessage1 = config.Mensagens[0];
+            m_ActiveMission.m_MissionMessage2 = config.Mensagens[1];
+            m_ActiveMission.m_MissionMessage3 = config.Mensagens[2];
+        }
 
         if (m_ActiveMission.DeployMission())
         {
-            m_MissionState = 1; 
-            PNH_Utils.SendMessageToAll("[RADIO PNH] Alguém na escuta? Câmbio!");
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendMissionStory, 3000, false);
+            m_MissionState = 1;
+            PNH_Utils.SendMessageToAll("[RADIO PNH] Alguém na escuta? Recebemos um sinal!");
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendMissionStory, 4000, false);
         }
         else
         {
-            PNH_Logger.Log("Missões", "[PNH_CORE] Falha (Local inválido). Sorteando outra em 10s...");
             m_ActiveMission = null;
-            m_CooldownTimer = 10; 
+            m_CooldownTimer = 10;
         }
     }
 
@@ -123,17 +109,16 @@ class PNH_MissionManager
         if (m_ActiveMission)
         {
             PNH_Utils.SendMessageToAll("[INFORMANTE] " + m_ActiveMission.m_MissionInformant + ": " + m_ActiveMission.m_MissionMessage1);
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 5000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage2);
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 10000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage3);
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 6000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage2);
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(PNH_Utils.SendMessageToAll, 12000, false, "[INFORMANTE] " + m_ActiveMission.m_MissionMessage3);
         }
     }
 
     void EndMission()
     {
-        // CORREÇÃO: Removemos a chamada direta ao CleanupMission para evitar erro de compilação
+        if (m_ActiveMission) m_ActiveMission.CleanUp(); 
         m_ActiveMission = null; 
         m_MissionState = 0;
         m_CooldownTimer = 1800; 
-        PNH_Logger.Log("Missões", "[PNH_CORE] Operação arquivada. Mapa limpo.");
     }
 }

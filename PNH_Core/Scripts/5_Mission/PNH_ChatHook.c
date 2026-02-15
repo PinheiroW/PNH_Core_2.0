@@ -15,18 +15,27 @@ modded class MissionServer
                 
                 if (senderName == "" || text == "") return;
 
-                // --- LOG DE CHAT GLOBAL ---
-                if (text.Substring(0, 1) != "!")
+                PlayerBase player = GetPlayerByName(senderName);
+
+                // --- 1. NOVA ROTA: Envia para o Gerenciador Universal ---
+                // Se o comando for reconhecido (!reload_mission, etc), ele retorna 'true' e encerra a leitura.
+                if (player && PNH_ChatManager.HandleCommand(player, text))
+                {
+                    return;
+                }
+
+                // --- 2. LOG DE CHAT GLOBAL (Ignora se começar com ! ou /) ---
+                string prefixo = text.Substring(0, 1);
+                if (prefixo != "!" && prefixo != "/")
                 {
                     string msgChat = "**" + senderName + "**: " + text;
                     PNH_Discord.Send("Global Chat", msgChat, 3447003, PNH_CoreConfig.GetChatURL());
                     return; 
                 }
 
-                // --- PROCESSAMENTO DE COMANDOS ---
+                // --- 3. COMANDOS LEGADOS DE ADMIN ---
                 string textLower = text;
                 textLower.ToLower();
-                PlayerBase player = GetPlayerByName(senderName); // Usa func local ou do Utils
 
                 // COMANDO: !coretest
                 if (textLower == "!coretest")
@@ -47,7 +56,7 @@ modded class MissionServer
                     return;
                 }
 
-                // COMANDO: !pnhreload (HOT RELOAD)
+                // COMANDO: !pnhreload (Configurações do Core)
                 if (textLower == "!pnhreload")
                 {
                     if (player)
@@ -55,7 +64,7 @@ modded class MissionServer
                         string sIDReload = PNH_Utils.GetSteamID(player);
                         if (PNH_CoreConfig.IsSuperAdmin(sIDReload))
                         {
-                            PNH_CoreConfig.Reload(); // Recarrega o JSON
+                            PNH_CoreConfig.Reload(); 
                             PNH_Utils.SendMessage(player, "Configuracoes Recarregadas com Sucesso!");
                             PNH_Discord.Send("System", "Configuracoes recarregadas manualmente por Admin via !pnhreload", 65280, PNH_CoreConfig.GetSystemURL());
                         }
@@ -66,7 +75,7 @@ modded class MissionServer
         }
     }
 
-    // Função auxiliar local (Backup)
+    // Função auxiliar local
     PlayerBase GetPlayerByName(string name)
     {
         array<Man> players = new array<Man>;
