@@ -16,29 +16,32 @@ class PNH_ChatManager
         string command = args.Get(0);
         command.ToLower();
 
-        // COMANDO: reload_mission
         if (command == "reload_mission")
         {
             string steamID = PNH_Utils.GetSteamID(player);
             
             if (PNH_CoreConfig.IsSuperAdmin(steamID))
             {
-                // CORREÇÃO: Busca a instância global do Manager diretamente
                 PNH_MissionManager manager = PNH_MissionManager.GetInstance();
                 if (manager)
                 {
+                    // Recarrega as configurações do arquivo JSON
                     manager.ReloadMissions();
-                    PNH_Utils.SendMessage(player, "[PNH CORE] Sucesso: Missões JSON recarregadas.");
-                    PNH_Logger.Log("Admin", "Admin " + player.GetIdentity().GetName() + " executou reload_mission.");
+                    
+                    // Força o reset do ciclo (Nova missão em 1 minuto)
+                    manager.ForceMissionCycle();
+
+                    PNH_Utils.SendMessage(player, "[PNH CORE] Sucesso: JSON recarregado. Nova missão em 60 segundos.");
+                    PNH_Logger.Log("Admin", "Admin " + player.GetIdentity().GetName() + " executou reload_mission e resetou o ciclo.");
                 }
                 else
                 {
-                    PNH_Utils.SendMessage(player, "[PNH CORE] Erro: Mission Manager não está online.");
+                    PNH_Utils.SendMessage(player, "[PNH CORE] Erro: Mission Manager offline.");
                 }
             }
             else
             {
-                PNH_Utils.SendMessage(player, "[PNH CORE] Acesso Negado: Você não é administrador.");
+                PNH_Utils.SendMessage(player, "[PNH CORE] Acesso Negado.");
             }
             return true;
         }
