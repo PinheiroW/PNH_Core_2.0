@@ -1,4 +1,4 @@
-class ShroomsMission extends SurvivorMissions
+class ShroomsMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 

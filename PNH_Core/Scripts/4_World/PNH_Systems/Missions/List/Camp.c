@@ -1,4 +1,4 @@
-class CampMission extends SurvivorMissions
+class CampMission extends PNH_MissionBase
 {
 	TentBase MissionObject;
 	FireplaceBase MissionCampfire;

@@ -1,4 +1,4 @@
-class UrbanMallMission extends SurvivorMissions
+class UrbanMallMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; // DryBag Preta (Kit Técnico)

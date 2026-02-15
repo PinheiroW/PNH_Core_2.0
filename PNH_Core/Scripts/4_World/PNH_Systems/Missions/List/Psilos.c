@@ -1,4 +1,4 @@
-class PsilosMission extends SurvivorMissions
+class PsilosMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 

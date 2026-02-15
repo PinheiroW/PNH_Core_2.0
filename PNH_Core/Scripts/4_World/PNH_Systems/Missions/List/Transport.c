@@ -1,4 +1,4 @@
-class TransportMission extends SurvivorMissions
+class TransportMission extends PNH_MissionBase
 {
 	Object MissionBuilding;
 	ItemBase MissionObject; 
