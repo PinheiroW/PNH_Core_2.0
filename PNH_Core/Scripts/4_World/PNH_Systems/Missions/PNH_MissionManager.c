@@ -78,17 +78,13 @@ class PNH_MissionManager
         if (config.DebugMission != "") selectedMission = config.DebugMission;
         else selectedMission = config.MissoesAtivas.GetRandomElement();
 
-        // Instancia a classe em C++ baseada no nome
-        if (selectedMission == "Camp") m_ActiveMission = new CampMission();
-        else if (selectedMission == "Horde") m_ActiveMission = new HordeMission();
-        else if (selectedMission == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
-        else if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
-        else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
-        else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission();
-        else if (selectedMission == "Shrooms") m_ActiveMission = new ShroomsMission();
-        else if (selectedMission == "Psilos") m_ActiveMission = new PsilosMission();
-        else if (selectedMission == "UrbanMall") m_ActiveMission = new UrbanMallMission();
-        else if (selectedMission == "Graveyard") m_ActiveMission = new GraveyardMission();
+        // -----------------------------------------------------------
+        // INSTANCIAMENTO DE MISSÕES (CORE LIMPO)
+        // -----------------------------------------------------------
+        if (selectedMission == "Apartment") 
+        {
+            m_ActiveMission = new ApartmentMission();
+        }
         else 
         {
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida na lista: " + selectedMission);

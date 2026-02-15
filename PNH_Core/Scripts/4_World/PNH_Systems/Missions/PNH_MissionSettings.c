@@ -2,7 +2,7 @@ class PNH_MissionSettingsData
 {
     bool UsarPDA;
     int TempoEntreMissoes; // Em minutos
-    string DebugMission;   // Deixa vazio "" para aleatório, ou escreve o nome da missão (ex: "Camp") para forçar testes
+    string DebugMission;   // Deixa vazio "" para aleatório, ou escreve o nome da missão (ex: "Apartment") para forçar testes
     ref array<string> MissoesAtivas;
 
     void PNH_MissionSettingsData()
@@ -13,12 +13,19 @@ class PNH_MissionSettingsData
 
 class PNH_MissionSettings
 {
-    private static const string SETTINGS_PATH = "$profile:PNH_MissionSettings.json";
+    // Caminho da pasta oficial PNH no profiles
+    private static const string SETTINGS_PATH = "$profile:PNH/PNH_MissionSettings.json";
     private static ref PNH_MissionSettingsData m_Data;
 
     static void Load()
     {
         if (!m_Data) m_Data = new PNH_MissionSettingsData();
+
+        // Garante que a pasta PNH existe antes de carregar ou salvar
+        if (!FileExist("$profile:PNH")) 
+        {
+            MakeDirectory("$profile:PNH");
+        }
 
         if (FileExist(SETTINGS_PATH))
         {
@@ -26,19 +33,13 @@ class PNH_MissionSettings
         }
         else
         {
-            // Cria as definições padrão caso o ficheiro não exista
+            // Cria as definições padrão caso o ficheiro não exista (Apenas a base limpa)
             m_Data.UsarPDA = true;
             m_Data.TempoEntreMissoes = 35;
             m_Data.DebugMission = ""; 
-            m_Data.MissoesAtivas.Insert("Camp");
-            m_Data.MissoesAtivas.Insert("Horde");
-            m_Data.MissoesAtivas.Insert("PlaneCrash");
-            m_Data.MissoesAtivas.Insert("BearHunt");
-            m_Data.MissoesAtivas.Insert("CityStore");
-            m_Data.MissoesAtivas.Insert("Shrooms");
-            m_Data.MissoesAtivas.Insert("Psilos");
-            m_Data.MissoesAtivas.Insert("UrbanMall");
-            m_Data.MissoesAtivas.Insert("Graveyard");
+            
+            // Insere a única missão ativa e configurada do mod
+            m_Data.MissoesAtivas.Insert("Apartment");
             
             Save();
         }
