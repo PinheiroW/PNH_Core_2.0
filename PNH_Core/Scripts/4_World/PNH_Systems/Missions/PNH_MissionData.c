@@ -1,4 +1,4 @@
-// --- ESTRUTURAS DO CENÁRIO ---
+// --- ESTRUTURAS DO CENÁRIO E BARRICADAS ---
 class PNH_MissionSettings_Barricada {
     string Classe;
     string PosicaoLocal;
@@ -10,7 +10,7 @@ class PNH_MissionSettings_Cenario {
     void PNH_MissionSettings_Cenario() { Barricadas = new array<ref PNH_MissionSettings_Barricada>; }
 }
 
-// --- ESTRUTURAS GERAIS ---
+// --- ESTRUTURAS GERAIS DE LORE E DIFICULDADE ---
 class PNH_MissionSettings_Lore {
     string Informante;
     ref array<string> NomesSobreviventes;
@@ -28,7 +28,18 @@ class PNH_MissionSettings_Locais {
     ref array<string> SpawnsZumbis;
 }
 
-// --- CLASSE PRINCIPAL DO JSON ---
+// --- ESTRUTURAS DE RECOMPENSA (NOVO) ---
+class PNH_MissionSettings_RecompensasSimples {
+    string Container;
+    ref array<string> Itens;
+}
+
+
+// ======================================================
+// CLASSES PRINCIPAIS DE CADA MISSÃO (LIGADAS AO JSON)
+// ======================================================
+
+// 1. DADOS DA MISSÃO APARTMENT
 class PNH_MissionData_Apartment {
     bool Ativa;
     float TempoLimiteSegundos;
@@ -54,5 +65,24 @@ class PNH_MissionData_Apartment {
         Locais.SpawnsZumbis = new array<string>;
         
         Cenario = new PNH_MissionSettings_Cenario();
+    }
+}
+
+// 2. DADOS DA MISSÃO BEAR HUNT (NOVO)
+class PNH_MissionData_BearHunt {
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno;
+    float RaioAvisoInterno;
+    
+    ref PNH_MissionSettings_Lore Lore;
+    ref PNH_MissionSettings_RecompensasSimples Recompensas;
+    
+    void PNH_MissionData_BearHunt() {
+        Lore = new PNH_MissionSettings_Lore();
+        Lore.MensagensRadio = new array<string>;
+        
+        Recompensas = new PNH_MissionSettings_RecompensasSimples();
+        Recompensas.Itens = new array<string>;
     }
 }
