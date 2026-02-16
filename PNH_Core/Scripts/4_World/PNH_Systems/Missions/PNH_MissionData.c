@@ -226,13 +226,18 @@ class PNH_MissionData_Graveyard {
 class PNH_MissionData_CityStore {
     bool Ativa;
     float TempoLimiteSegundos;
-    float RaioAvisoExterno; 
-    float RaioAvisoInterno; 
+    float RaioAvisoExterno; // 90.0
+    float RaioAvisoInterno; // 20.0
     
     string ItemCientifico;  
     int QtdItemCientifico;  
     string ItemEstabilizador; 
     int QtdItemEstabilizador; 
+    
+    // ---> NOVO: CONFIGURAÇÃO DA MOCHILA <---
+    string ClasseBolsa;
+    string PosicaoBolsaLocal;
+    string OrientacaoBolsaLocal;
     
     string PosicaoEntrega; 
     string CidadeEntrega;
@@ -241,8 +246,6 @@ class PNH_MissionData_CityStore {
     
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_RecompensasHorda Recompensas;
-    
-    // ---> NOVO: SUPORTE A BARRICADAS <---
     ref PNH_MissionSettings_Cenario Cenario; 
     
     void PNH_MissionData_CityStore() {
@@ -250,6 +253,6 @@ class PNH_MissionData_CityStore {
         Lore.MensagensRadio = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
         RoupaNPC = new array<string>;
-        Cenario = new PNH_MissionSettings_Cenario(); // Inicializa o cenário
+        Cenario = new PNH_MissionSettings_Cenario(); 
     }
 }
