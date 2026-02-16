@@ -42,6 +42,7 @@ class PNH_MissionSettings_Lore {
     ref array<string> NomesSobreviventes;
     ref array<string> MensagensRadio;
     string MensagemVitoria; 
+    string MensagemFaseB;
 }
 
 class PNH_MissionSettings_Dificuldade {

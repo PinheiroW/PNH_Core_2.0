@@ -59,10 +59,16 @@ class CityStoreMission extends PNH_MissionBase
             {
                 m_PhaseB_Active = true;
                 
-                string msgB = "**Fase B: Extração**. Mochila recuperada! Leve-a imediatamente para a equipe NBC no Terminal de Trem em " + m_Config.CidadeEntrega + ".";
+                // Puxa a mensagem do JSON e adiciona a cidade no final
+                string msgB = "**Fase B: Extração**. Mochila recuperada! Siga para a extração em ";
+                if (m_Config.Lore && m_Config.Lore.MensagemFaseB != "") {
+                    msgB = m_Config.Lore.MensagemFaseB;
+                }
+                msgB = msgB + m_Config.CidadeEntrega + ".";
+                
                 EnviarAviso(m_MissionInformant, msgB);
                 
-                // Novo Aviso no Discord da Fase B
+                // Aviso no Discord da Fase B
                 if (m_NPC) {
                     string discordMsg = "[PNH_CORE] MISSÃO_ATUALIZADA: Fase B (Extração) iniciada no Terminal de Trem de " + m_Config.CidadeEntrega + " | Coordenadas: " + m_NPC.GetPosition().ToString();
                     PNH_Logger.Log("Missões", discordMsg);
