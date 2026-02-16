@@ -183,6 +183,10 @@ class PNH_MissionData_Apartment {
     string ClasseCorpo;
     string PosicaoCorpoLocal;
     string OrientacaoCorpoLocal;
+    
+    // NOVOS CAMPOS PARA O NPC VIVO E EQUIPADO
+    ref array<string> RoupasNPC;
+    ref array<string> InventarioNPC;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -194,6 +198,8 @@ class PNH_MissionData_Apartment {
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
         Cenario = new PNH_MissionSettings_Cenario();
+        RoupasNPC = new array<string>;
+        InventarioNPC = new array<string>;
     }
 }
 
