@@ -41,7 +41,6 @@ class ApartmentMission extends PNH_MissionBase
     {
         float distance = vector.Distance(player.GetPosition(), m_MissionPosition);
 
-        // GATILHO: APROXIMAÇÃO (Raio Externo)
         if (!m_OuterWarned && distance <= m_MissionZoneOuterRadius) {
             m_OuterWarned = true;
             string msgAprox = "Você está se aproximando do objetivo.";
@@ -51,7 +50,6 @@ class ApartmentMission extends PNH_MissionBase
             EnviarAviso(m_MissionInformant, msgAprox);
         }
 
-        // GATILHO: NO OBJETIVO (Raio Interno)
         if (!m_InnerWarned && distance <= m_MissionZoneInnerRadius) {
             m_InnerWarned = true;
             string msgAlvo = "Objetivo localizado. Recupere a carga.";
@@ -72,7 +70,6 @@ class ApartmentMission extends PNH_MissionBase
         m_IsVictory = true;
         PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName());
 
-        // GATILHO: VITÓRIA
         string mensagemFinal = "Missão cumprida!";
         if (m_Config.Lore && m_Config.Lore.MensagemVitoria != "") 
             mensagemFinal = m_Config.Lore.MensagemVitoria;
@@ -103,7 +100,6 @@ class ApartmentMission extends PNH_MissionBase
 
         if (missionBuilding)
         {
-            // Spawn de Barricadas, Corpo e Barril (Lógica mantida)
             SpawnApartmentAssets(missionBuilding);
         }
 
@@ -113,10 +109,10 @@ class ApartmentMission extends PNH_MissionBase
 
     void SpawnApartmentAssets(Object missionBuilding)
     {
-        // Barricadas
+        // CORREÇÃO AQUI: PNH_MissionSettings_Barricada em vez de PNH_Settings_Barricada
         if (m_Config.Cenario && m_Config.Cenario.Barricadas) {
             for (int i = 0; i < m_Config.Cenario.Barricadas.Count(); i++) {
-                PNH_Settings_Barricada bar = m_Config.Cenario.Barricadas[i];
+                PNH_MissionSettings_Barricada bar = m_Config.Cenario.Barricadas[i];
                 Object bObj = GetGame().CreateObject(bar.Classe, missionBuilding.ModelToWorld(bar.PosicaoLocal.ToVector()), false, false, true);
                 if (bObj) {
                     bObj.SetOrientation(missionBuilding.GetOrientation() + bar.OrientacaoLocal.ToVector());
@@ -125,7 +121,6 @@ class ApartmentMission extends PNH_MissionBase
             }
         }
 
-        // Corpo
         vector cPos = missionBuilding.ModelToWorld(m_Config.PosicaoCorpoLocal.ToVector());
         m_SurvivorCorpse = GetGame().CreateObject(m_Config.ClasseCorpo, cPos, false, false, true);
         if (m_SurvivorCorpse) {
@@ -135,7 +130,6 @@ class ApartmentMission extends PNH_MissionBase
             m_MissionObjects.Insert(m_SurvivorCorpse);
         }
 
-        // Barril
         vector rPos = missionBuilding.ModelToWorld(m_Config.PosicaoRecompensaLocal.ToVector());
         m_RewardContainer = ItemBase.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, rPos, false, false, true));
         if (m_RewardContainer) {
