@@ -184,9 +184,14 @@ class PNH_MissionData_Apartment {
     string PosicaoCorpoLocal;
     string OrientacaoCorpoLocal;
     
-    // NOVOS CAMPOS PARA O NPC VIVO E EQUIPADO
+    // Suporte para o NPC e Zumbi Assassino
     ref array<string> RoupasNPC;
     ref array<string> InventarioNPC;
+    string ClasseZumbiAssassino;
+    string PosicaoZumbiAssassinoLocal;
+    
+    // Lista de Zumbis Internos (Dinamica do Mod Original)
+    ref array<string> SpawnsZumbisInternos;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -200,6 +205,7 @@ class PNH_MissionData_Apartment {
         Cenario = new PNH_MissionSettings_Cenario();
         RoupasNPC = new array<string>;
         InventarioNPC = new array<string>;
+        SpawnsZumbisInternos = new array<string>;
     }
 }
 

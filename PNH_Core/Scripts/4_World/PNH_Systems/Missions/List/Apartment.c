@@ -4,6 +4,7 @@ class ApartmentMission extends PNH_MissionBase
     Object m_SurvivorNPC;
     bool m_IsVictory = false;
     bool m_Deployed = false; 
+    bool m_BarrelSpawned = false; // Gatilho para o barril
     string m_SurvivorName;
 
     bool m_OuterWarned = false;
@@ -27,14 +28,6 @@ class ApartmentMission extends PNH_MissionBase
         m_MissionTimeout = m_Config.TempoLimiteSegundos;
         m_MissionZoneOuterRadius = m_Config.RaioAvisoExterno;
         m_MissionZoneInnerRadius = m_Config.RaioAvisoInterno;
-
-        if (m_Config.Lore) {
-            m_MissionInformant = m_Config.Lore.Informante;
-            if (m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 2) {
-                m_MissionMessage1 = m_SurvivorName + m_Config.Lore.MensagensRadio[0];
-                m_MissionMessage2 = m_Config.Lore.MensagensRadio[1];
-            }
-        }
     }
 
     override void PlayerChecks(PlayerBase player)
@@ -51,6 +44,17 @@ class ApartmentMission extends PNH_MissionBase
             EnviarAviso(m_MissionInformant, m_Config.Lore.MensagemNoObjetivo);
         }
 
+        // GATILHO PARA O BARRIL: Jogador perto do corpo do NPC morto
+        if (!m_BarrelSpawned && m_SurvivorNPC && !m_SurvivorNPC.IsAlive())
+        {
+            float distToCorpse = vector.Distance(player.GetPosition(), m_SurvivorNPC.GetPosition());
+            if (distToCorpse <= 2.0) {
+                m_BarrelSpawned = true;
+                SpawnRewards();
+                EnviarAviso("Comando PNH", "O sobrevivente não resistiu. O barril de suprimentos foi localizado no local.");
+            }
+        }
+
         if (!m_IsVictory && m_RewardContainer && m_RewardContainer.IsOpen())
         {
             FinalizarMissao(player);
@@ -62,8 +66,8 @@ class ApartmentMission extends PNH_MissionBase
         m_IsVictory = true;
         PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName());
 
-        // SPAWN DA SEGUNDA HORDA (10 Zumbis Fora do Prédio)
-        SpawnZumbis(10, m_MissionPosition, 30.0);
+        // SPAWN DA HORDA EXTERNA (Ao abrir o barril)
+        SpawnZumbis(10, m_MissionPosition, 35.0);
 
         string mensagemFinal = m_Config.Lore.MensagemVitoria;
         EnviarAviso("Comando PNH", mensagemFinal);
@@ -77,12 +81,7 @@ class ApartmentMission extends PNH_MissionBase
         if (!m_Config || !m_Config.Ativa || m_Deployed) return false;
         m_Deployed = true;
 
-        if (m_Config.Lore && m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 3) {
-            m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_MissionLocation + " **.";
-        }
-
         Object missionBuilding = null;
-        // Aumentado o raio de busca para garantir a detecção do prédio e spawn das barricadas
         GetGame().GetObjectsAtPosition(m_MissionPosition, 30.0, m_ObjectList, m_ObjectCargoList);
         for (int b = 0; b < m_ObjectList.Count(); b++) {
             string type = m_ObjectList[b].GetType();
@@ -94,34 +93,53 @@ class ApartmentMission extends PNH_MissionBase
 
         if (missionBuilding)
         {
-            // 1. SPAWN BARRICADAS
-            if (m_Config.Cenario && m_Config.Cenario.Barricadas) {
-                for (int i = 0; i < m_Config.Cenario.Barricadas.Count(); i++) {
-                    PNH_MissionSettings_Barricada bar = m_Config.Cenario.Barricadas[i];
-                    Object bObj = GetGame().CreateObject(bar.Classe, missionBuilding.ModelToWorld(bar.PosicaoLocal.ToVector()), false, false, true);
-                    if (bObj) {
-                        bObj.SetOrientation(missionBuilding.GetOrientation() + bar.OrientacaoLocal.ToVector());
-                        m_MissionObjects.Insert(bObj);
-                    }
-                }
-            }
+            // 1. BARRICADAS
+            SpawnBarricadas(missionBuilding);
 
-            // 2. SPAWN NPC (VIVO E EQUIPADO)
-            vector cPos = missionBuilding.ModelToWorld(m_Config.PosicaoCorpoLocal.ToVector());
-            m_SurvivorNPC = GetGame().CreateObject(m_Config.ClasseCorpo, cPos, false, false, true);
-            if (m_SurvivorNPC) {
-                EntityAI npcEnt = EntityAI.Cast(m_SurvivorNPC);
-                npcEnt.SetOrientation(missionBuilding.GetOrientation() + m_Config.OrientacaoCorpoLocal.ToVector());
-                
-                // Veste o NPC
-                for (int r = 0; r < m_Config.RoupasNPC.Count(); r++) npcEnt.GetInventory().CreateInInventory(m_Config.RoupasNPC[r]);
-                // Adiciona itens ao inventário
-                for (int it = 0; it < m_Config.InventarioNPC.Count(); it++) npcEnt.GetInventory().CreateInInventory(m_Config.InventarioNPC[it]);
-                
-                m_MissionObjects.Insert(m_SurvivorNPC);
-            }
+            // 2. NPC VIVO (Com pouca vida para o zumbi matar)
+            SpawnSurvivor(missionBuilding);
 
-            // 3. SPAWN BARRIL
+            // 3. ZUMBIS INTERNOS (Dinamica do Mod Original)
+            SpawnZumbisInternos(missionBuilding);
+        }
+
+        PNH_Logger.Log("Missões", "[PNH SYSTEM] MISSÃO_INICIADA: Apartment em " + m_MissionLocation);
+        return true;
+    }
+
+    void SpawnSurvivor(Object missionBuilding)
+    {
+        vector cPos = missionBuilding.ModelToWorld(m_Config.PosicaoCorpoLocal.ToVector());
+        m_SurvivorNPC = GetGame().CreateObject(m_Config.ClasseCorpo, cPos, false, false, true);
+        if (m_SurvivorNPC) {
+            EntityAI ent = EntityAI.Cast(m_SurvivorNPC);
+            ent.SetOrientation(missionBuilding.GetOrientation() + m_Config.OrientacaoCorpoLocal.ToVector());
+            for (int r = 0; r < m_Config.RoupasNPC.Count(); r++) ent.GetInventory().CreateInInventory(m_Config.RoupasNPC[r]);
+            for (int it = 0; it < m_Config.InventarioNPC.Count(); it++) ent.GetInventory().CreateInInventory(m_Config.InventarioNPC[it]);
+            
+            ent.SetHealth("", "", 10); // Nasce vivo, mas muito fraco
+            m_MissionObjects.Insert(m_SurvivorNPC);
+
+            // SPAWN DO ZUMBI ASSASSINO AO LADO
+            vector zKillPos = missionBuilding.ModelToWorld(m_Config.PosicaoZumbiAssassinoLocal.ToVector());
+            Object killer = GetGame().CreateObject(m_Config.ClasseZumbiAssassino, zKillPos, false, true, true);
+            if (killer) m_MissionAIs.Insert(killer);
+        }
+    }
+
+    void SpawnRewards()
+    {
+        // Barril nasce somente no gatilho de proximidade
+        Object missionBuilding = null;
+        GetGame().GetObjectsAtPosition(m_MissionPosition, 30.0, m_ObjectList, m_ObjectCargoList);
+        for (int b = 0; b < m_ObjectList.Count(); b++) {
+            if (m_ObjectList[b].GetType().Contains("Land_Tenement_Small") || m_ObjectList[b].GetType().Contains("Apartment")) {
+                missionBuilding = m_ObjectList[b];
+                break;
+            }
+        }
+
+        if (missionBuilding) {
             vector rPos = missionBuilding.ModelToWorld(m_Config.PosicaoRecompensaLocal.ToVector());
             m_RewardContainer = ItemBase.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, rPos, false, false, true));
             if (m_RewardContainer) {
@@ -131,12 +149,28 @@ class ApartmentMission extends PNH_MissionBase
                 m_MissionObjects.Insert(m_RewardContainer);
             }
         }
+    }
 
-        // 4. HORDA INICIAL (10 Zumbis protegendo o prédio)
-        SpawnZumbis(10, m_MissionPosition, 15.0);
+    void SpawnZumbisInternos(Object missionBuilding)
+    {
+        for (int i = 0; i < m_Config.SpawnsZumbisInternos.Count(); i++) {
+            vector zPos = missionBuilding.ModelToWorld(m_Config.SpawnsZumbisInternos[i].ToVector());
+            m_MissionAIs.Insert(GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), zPos, false, true, true));
+        }
+    }
 
-        PNH_Logger.Log("Missões", "[PNH SYSTEM] MISSÃO_INICIADA: Apartment em " + m_MissionLocation);
-        return true;
+    void SpawnBarricadas(Object missionBuilding)
+    {
+        if (m_Config.Cenario && m_Config.Cenario.Barricadas) {
+            for (int i = 0; i < m_Config.Cenario.Barricadas.Count(); i++) {
+                PNH_MissionSettings_Barricada bar = m_Config.Cenario.Barricadas[i];
+                Object bObj = GetGame().CreateObject(bar.Classe, missionBuilding.ModelToWorld(bar.PosicaoLocal.ToVector()), false, false, true);
+                if (bObj) {
+                    bObj.SetOrientation(missionBuilding.GetOrientation() + bar.OrientacaoLocal.ToVector());
+                    m_MissionObjects.Insert(bObj);
+                }
+            }
+        }
     }
 
     void SpawnZumbis(int qtd, vector pos, float raio)
