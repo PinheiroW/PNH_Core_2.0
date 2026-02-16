@@ -6,6 +6,7 @@ class CityStoreMission extends PNH_MissionBase
     
     bool m_IsVictory = false;
     bool m_PhaseB_Active = false;
+    bool m_ExchangeDone = false; 
     
     // Controles de Perímetro
     bool m_A_OuterWarned = false; bool m_A_InnerWarned = false;
@@ -50,35 +51,71 @@ class CityStoreMission extends PNH_MissionBase
             }
             if (!m_A_InnerWarned && distA <= m_MissionZoneInnerRadius) { 
                 m_A_InnerWarned = true; 
-                EnviarAviso(m_MissionInformant, "Você chegou. Entre no mercado e localize a Mochila Improvisada com os cogumelos e antibióticos."); 
+                EnviarAviso(m_MissionInformant, "Você chegou. Cuidado com os infectados. Entre no mercado e localize a Mochila Improvisada."); 
             }
 
             // GATILHO: Pegou a mochila
             if (m_BagObject && player.GetInventory().HasEntityInInventory(m_BagObject))
             {
                 m_PhaseB_Active = true;
-                string msgB = "**Fase B: Extração**. Mochila recuperada! Leve-a imediatamente para a equipe NBC na delegacia de " + m_Config.CidadeEntrega + ".";
+                
+                string msgB = "**Fase B: Extração**. Mochila recuperada! Leve-a imediatamente para a equipe NBC no Terminal de Trem em " + m_Config.CidadeEntrega + ".";
                 EnviarAviso(m_MissionInformant, msgB);
+                
+                // Novo Aviso no Discord da Fase B
+                if (m_NPC) {
+                    string discordMsg = "[PNH_CORE] MISSÃO_ATUALIZADA: Fase B (Extração) iniciada no Terminal de Trem de " + m_Config.CidadeEntrega + " | Coordenadas: " + m_NPC.GetPosition().ToString();
+                    PNH_Logger.Log("Missões", discordMsg);
+                }
+
+                // Spawna Zumbis da Fase B
+                SpawnZumbisFaseB();
             }
         }
-        // --- FASE B: ENTREGA AO NPC NBC ---
-        else if (!m_IsVictory && m_NPC)
+        // --- FASE B: ENTREGA E BARRIL ---
+        else if (m_NPC)
         {
             float distB = vector.Distance(playerPos, m_NPC.GetPosition());
             
             if (!m_B_OuterWarned && distB <= m_MissionZoneOuterRadius) { 
                 m_B_OuterWarned = true; 
-                EnviarAviso(m_MissionInformant, "O contato da bio-extração está na área da delegacia."); 
+                EnviarAviso(m_MissionInformant, "O contato da bio-extração está na área do Terminal de Trem."); 
             }
             if (!m_B_InnerWarned && distB <= m_MissionZoneInnerRadius) { 
                 m_B_InnerWarned = true; 
-                EnviarAviso(m_MissionInformant, "Entregue a mochila improvisada diretamente ao contato para receber o seu pagamento."); 
+                EnviarAviso(m_MissionInformant, "Entregue a mochila improvisada diretamente ao contato para liberar o barril de pagamento."); 
             }
             
-            // Vitória (Distância de 3m + Mochila no inventário)
-            if (distB < 3.0 && m_BagObject && player.GetInventory().HasEntityInInventory(m_BagObject))
+            // Etapa 1: Entrega a Mochila (Aparece o Barril)
+            if (!m_ExchangeDone && distB < 3.0 && m_BagObject && player.GetInventory().HasEntityInInventory(m_BagObject))
             {
-                FinalizarMissao(player);
+                m_ExchangeDone = true;
+                if (m_BagObject) GetGame().ObjectDelete(m_BagObject);
+                SpawnRewards();
+                EnviarAviso("Comando PNH", "Material biológico recebido com sucesso! O barril de recompensa surgiu, abra-o para finalizar a missão.");
+            }
+            
+            // Etapa 2: Vitória ao Abrir o Barril
+            if (m_ExchangeDone && !m_IsVictory && m_RewardBarrel)
+            {
+                if (m_RewardBarrel.IsOpen())
+                {
+                    FinalizarMissao(player);
+                }
+            }
+        }
+    }
+
+    void SpawnZumbisFaseB()
+    {
+        if (m_NPC && m_Config && m_Config.Dificuldade && m_Config.Dificuldade.ClassesZumbis.Count() > 0)
+        {
+            vector center = m_NPC.GetPosition();
+            for (int i = 0; i < m_Config.Dificuldade.QuantidadeHordaFinal; i++)
+            {
+                vector zPos = center + Vector(Math.RandomFloat(-15, 15), 0, Math.RandomFloat(-15, 15));
+                zPos[1] = GetGame().SurfaceY(zPos[0], zPos[2]);
+                m_MissionAIs.Insert(GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), zPos, false, true, true));
             }
         }
     }
@@ -87,14 +124,15 @@ class CityStoreMission extends PNH_MissionBase
     {
         m_IsVictory = true;
         
-        // Exclui a mochila inteira (junto com tudo que está dentro)
-        if (m_BagObject) GetGame().ObjectDelete(m_BagObject);
-        
-        SpawnRewards();
-        
-        string winMsg = "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName() + " entregou as amostras biológicas em " + m_Config.CidadeEntrega + "!";
+        string winMsg = "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName() + " finalizou a extração biológica no Terminal de Trem de " + m_Config.CidadeEntrega + "!";
         PNH_Logger.Log("Missões", winMsg);
-        EnviarAviso("Comando PNH", "Material recebido com sucesso! O barril de recompensa foi liberado no local.");
+        
+        string mensagemFinal = "Missão concluída! Recompensa liberada no local.";
+        if (m_Config.Lore && m_Config.Lore.MensagemVitoria != "") {
+            mensagemFinal = m_Config.Lore.MensagemVitoria;
+        }
+        
+        EnviarAviso("Comando PNH", mensagemFinal);
         
         PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
         m_MissionTimeout = m_MissionTime + config.ConfiguracoesGerais.TempoLimpezaSegundos;
@@ -133,7 +171,7 @@ class CityStoreMission extends PNH_MissionBase
             m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_Config.CidadeEntrega + " **.";
         }
 
-        // 1. SPAWN NPC NBC
+        // 1. SPAWN NPC NBC (Fase B)
         vector deliveryPos = m_Config.PosicaoEntrega.ToVector();
         deliveryPos[1] = GetGame().SurfaceY(deliveryPos[0], deliveryPos[2]);
         m_NPC = GetGame().CreateObject(m_Config.ClasseNPC, deliveryPos, false, false, true);
@@ -146,7 +184,7 @@ class CityStoreMission extends PNH_MissionBase
             m_MissionObjects.Insert(m_NPC);
         }
 
-        // 2. ENCONTRAR O MERCADO (Raio expandido para 20 metros para garantir que acha)
+        // 2. ENCONTRAR O MERCADO E SPAWN DA FASE A
         Object missionBuilding = null;
         GetGame().GetObjectsAtPosition(m_MissionPosition, 20.0, m_ObjectList, m_ObjectCargoList);
         for (int b = 0; b < m_ObjectList.Count(); b++) {
@@ -156,9 +194,13 @@ class CityStoreMission extends PNH_MissionBase
             }
         }
 
+        vector baseSpawnPos = m_MissionPosition;
+
         if (missionBuilding) 
         {
-            // 3. CONSTRUIR BARRICADAS
+            baseSpawnPos = missionBuilding.GetPosition();
+
+            // CONSTRUIR BARRICADAS
             if (m_Config.Cenario && m_Config.Cenario.Barricadas) 
             {
                 for (int barIdx = 0; barIdx < m_Config.Cenario.Barricadas.Count(); barIdx++) 
@@ -176,7 +218,7 @@ class CityStoreMission extends PNH_MissionBase
                 }
             }
             
-            // 4. SPAWN DA MOCHILA E ITENS DENTRO DELA
+            // SPAWN DA MOCHILA E ITENS
             vector bagWorldPos = missionBuilding.ModelToWorld(m_Config.PosicaoBolsaLocal.ToVector());
             m_BagObject = ItemBase.Cast(GetGame().CreateObject(m_Config.ClasseBolsa, bagWorldPos, false, false, true));
             if (m_BagObject)
@@ -192,14 +234,24 @@ class CityStoreMission extends PNH_MissionBase
         }
         else 
         {
-            // FALLBACK: Caso ocorra alguma anomalia grave e o prédio não seja encontrado, 
-            // a mochila ainda vai nascer no centro do marcador para a missão não quebrar.
-            PNH_Logger.Log("Missões", "[PNH_CORE] AVISO: Prédio Land_City_Store não detectado! Usando ponto zero.");
+            // FALLBACK DE SEGURANÇA
+            PNH_Logger.Log("Missões", "[PNH_CORE] AVISO: Prédio não detectado! Usando ponto zero.");
             m_BagObject = ItemBase.Cast(GetGame().CreateObject(m_Config.ClasseBolsa, m_MissionPosition, false, false, true));
             if (m_BagObject) {
                 for (int m = 0; m < m_Config.QtdItemCientifico; m++) m_BagObject.GetInventory().CreateInInventory(m_Config.ItemCientifico);
                 for (int n = 0; n < m_Config.QtdItemEstabilizador; n++) m_BagObject.GetInventory().CreateInInventory(m_Config.ItemEstabilizador);
                 m_MissionObjects.Insert(m_BagObject);
+            }
+        }
+
+        // SPAWN DOS ZUMBIS DA FASE A (No Mercado)
+        if (m_Config.Dificuldade && m_Config.Dificuldade.ClassesZumbis.Count() > 0)
+        {
+            for (int zA = 0; zA < m_Config.Dificuldade.QuantidadeHordaFinal; zA++)
+            {
+                vector zPosA = baseSpawnPos + Vector(Math.RandomFloat(-15, 15), 0, Math.RandomFloat(-15, 15));
+                zPosA[1] = GetGame().SurfaceY(zPosA[0], zPosA[2]);
+                m_MissionAIs.Insert(GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), zPosA, false, true, true));
             }
         }
 
