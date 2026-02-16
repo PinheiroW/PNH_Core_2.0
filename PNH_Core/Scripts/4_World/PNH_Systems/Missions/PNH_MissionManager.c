@@ -83,7 +83,9 @@ class PNH_MissionManager
         if (config.DebugMission != "") selectedMission = config.DebugMission;
         else selectedMission = config.MissoesAtivas.GetRandomElement();
 
+        // 1. REGISTO DE MISSÕES: Agora conhece a BearHunt
         if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
+        else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
         else 
         {
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida: " + selectedMission);
@@ -141,6 +143,13 @@ class PNH_MissionManager
             }
             
             GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendMissionStory, 4000, false);
+        }
+        else
+        {
+            // 2. CORREÇÃO DO SPAM DE LOG
+            // Se a missão abortou (ex: Ativa = false no JSON), limpa a missão atual e tenta sortear outra em 10 segundos.
+            m_ActiveMission = null;
+            m_CooldownTimer = 10;
         }
     }
 

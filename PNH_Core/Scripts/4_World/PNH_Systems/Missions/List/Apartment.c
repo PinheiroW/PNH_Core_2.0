@@ -215,7 +215,18 @@ class ApartmentMission extends PNH_MissionBase
             
     override bool DeployMission()
     {
-        // --- TRAVA DE SEGURANÇA ANTI-CRASH ---
+        // Trava de segurança Anti-Crash
+        if (!m_Config) return false;
+
+        // --- AQUI ESTÁ A MÁGICA DO BOTÃO LIGA/DESLIGA ---
+        if (!m_Config.Ativa) 
+        {
+            PNH_Logger.Log("Missões", "[PNH_CORE] Missão Apartment ignorada (Ativa = false no JSON).");
+            return false; // Cancela o início da missão
+        }
+        // ------------------------------------------------
+
+        // --- TRAVA DE SEGURANÇA SE O JSON ESTIVER VAZIO ---
         if (Spawnpoints.Count() == 0) 
         {
             PNH_Logger.Error("Missões", "ERRO CRÍTICO: A missão não pôde iniciar porque o JSON não foi carregado ou está vazio.");

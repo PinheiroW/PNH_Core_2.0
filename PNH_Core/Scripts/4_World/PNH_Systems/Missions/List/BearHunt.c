@@ -78,6 +78,14 @@ class BearHuntMission extends PNH_MissionBase
         // Trava de segurança Anti-Crash
         if (!m_Config) return false;
 
+        // --- AQUI ESTÁ A MÁGICA DO BOTÃO LIGA/DESLIGA ---
+        if (!m_Config.Ativa) 
+        {
+            PNH_Logger.Log("Missões", "[PNH_CORE] Missão BearHunt ignorada (Ativa = false no JSON).");
+            return false; // Cancela o início da missão
+        }
+        // ------------------------------------------------
+
         if (IsExtended()) {
             PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Caçada Alpha em " + m_MissionLocation);
             return true;
