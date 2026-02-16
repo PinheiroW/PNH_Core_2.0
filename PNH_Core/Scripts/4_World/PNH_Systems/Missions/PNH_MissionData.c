@@ -222,3 +222,30 @@ class PNH_MissionData_Graveyard {
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
     }
 }
+
+class PNH_MissionData_CityStore {
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno; // 90.0
+    float RaioAvisoInterno; // 20.0
+    
+    string ItemCientifico;  // Cogumelos
+    int QtdItemCientifico;  // 10
+    string ItemEstabilizador; // Antibióticos
+    int QtdItemEstabilizador; // 4
+    
+    string PosicaoEntrega; 
+    string CidadeEntrega;
+    string ClasseNPC;       // Ex: SurvivorM_Mirek
+    ref array<string> RoupaNPC; // Conjunto NBC
+    
+    ref PNH_MissionSettings_Lore Lore;
+    ref PNH_MissionSettings_RecompensasHorda Recompensas;
+    
+    void PNH_MissionData_CityStore() {
+        Lore = new PNH_MissionSettings_Lore();
+        Lore.MensagensRadio = new array<string>;
+        Recompensas = new PNH_MissionSettings_RecompensasHorda();
+        RoupaNPC = new array<string>;
+    }
+}

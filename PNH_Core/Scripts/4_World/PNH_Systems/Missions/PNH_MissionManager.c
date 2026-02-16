@@ -95,6 +95,8 @@ class PNH_MissionManager
         else if (selectedMission == "Horde") m_ActiveMission = new HordeMission();
         else if (selectedMission == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
         else if (selectedMission == "Transport") m_ActiveMission = new TransportMission();
+        else if (selectedMission == "Graveyard") m_ActiveMission = new GraveyardMission();
+        else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission(); // CORRETO
         else 
         {
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida: " + selectedMission);
