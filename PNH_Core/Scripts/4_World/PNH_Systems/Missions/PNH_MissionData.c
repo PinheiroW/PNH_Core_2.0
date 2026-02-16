@@ -45,11 +45,15 @@ class PNH_MissionSettings_Lore {
     ref array<string> NomesSobreviventes;
     ref array<string> MensagensRadio;
     
-    // Gatilhos de Texto
-    string MensagemAproximacao;       // Gatilho: Raio Externo
-    string MensagemNoObjetivo;        // Gatilho: Raio Interno
-    string MensagemVitoria;           // Gatilho: Sucesso
-    string MensagemFaseB;             // Gatilho: Evento Especial (se houver)
+    // Gatilhos de Texto Fase A
+    string MensagemAproximacao;       
+    string MensagemNoObjetivo;        
+    string MensagemVitoria;           
+    
+    // Gatilhos de Texto Fase B (Entrega)
+    string MensagemFaseB;             
+    string MensagemAproximacaoEntrega;
+    string MensagemNoObjetivoEntrega; 
 
     void PNH_MissionSettings_Lore() {
         NomesSobreviventes = new array<string>;
@@ -178,20 +182,25 @@ class PNH_MissionData_Apartment {
     float TempoLimiteSegundos;
     float RaioAvisoExterno;
     float RaioAvisoInterno;
-    string PosicaoRecompensaLocal; 
     
+    // --- Configurações Fase A (Prédio) ---
+    string PosicaoRecompensaLocal; 
     string ClasseCorpo;
     string PosicaoCorpoLocal;
     string OrientacaoCorpoLocal;
     
-    // Suporte para o NPC e Zumbi Assassino
     ref array<string> RoupasNPC;
     ref array<string> InventarioNPC;
     string ClasseZumbiAssassino;
     string PosicaoZumbiAssassinoLocal;
-    
-    // Lista de Zumbis Internos (Dinamica do Mod Original)
     ref array<string> SpawnsZumbisInternos;
+
+    // --- Configurações Fase B (Entrega do Livro) ---
+    string ItemMissao;
+    string PosicaoEntrega;
+    string CidadeEntrega;
+    string ClasseNPCEntrega;
+    ref array<string> RoupasNPCEntrega;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -203,9 +212,11 @@ class PNH_MissionData_Apartment {
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
         Cenario = new PNH_MissionSettings_Cenario();
+        
         RoupasNPC = new array<string>;
         InventarioNPC = new array<string>;
         SpawnsZumbisInternos = new array<string>;
+        RoupasNPCEntrega = new array<string>;
     }
 }
 
