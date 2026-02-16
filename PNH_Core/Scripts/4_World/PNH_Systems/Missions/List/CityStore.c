@@ -174,7 +174,10 @@ class CityStoreMission extends PNH_MissionBase
         
         if (m_Config.Lore && m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 3) {
             m_MissionMessage1 = m_MissionMessage1 + m_MissionLocation; 
-            m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_Config.CidadeEntrega + " **.";
+            
+            // CORREÇÃO: Removemos a adição de "+ m_Config.CidadeEntrega +" desta linha 
+            // para que o local de entrega permaneça em total segredo durante a Fase A!
+            m_MissionMessage3 = m_Config.Lore.MensagensRadio[2]; 
         }
 
         // 1. SPAWN NPC NBC (Fase B)
