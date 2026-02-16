@@ -1,7 +1,9 @@
 class ApartmentMission extends PNH_MissionBase
 {
     ItemBase m_RewardContainer;
+    Object m_SurvivorCorpse;
     bool m_IsVictory = false;
+    bool m_Deployed = false; 
     string m_SurvivorName;
 
     bool m_OuterWarned = false;
@@ -17,7 +19,6 @@ class ApartmentMission extends PNH_MissionBase
         m_Config = new PNH_MissionData_Apartment();
         if (FileExist(caminhoJson)) JsonFileLoader<PNH_MissionData_Apartment>.JsonLoadFile(caminhoJson, m_Config);
 
-        // Sorteia o nome do sobrevivente dono do apartamento
         if (m_Config.Lore && m_Config.Lore.NomesSobreviventes && m_Config.Lore.NomesSobreviventes.Count() > 0)
             m_SurvivorName = m_Config.Lore.NomesSobreviventes.GetRandomElement();
         else
@@ -30,7 +31,6 @@ class ApartmentMission extends PNH_MissionBase
         if (m_Config.Lore) {
             m_MissionInformant = m_Config.Lore.Informante;
             if (m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 2) {
-                // Junta o nome sorteado com a frase do JSON (Ex: "Yuri foi um dos meus melhores alunos...")
                 m_MissionMessage1 = m_SurvivorName + m_Config.Lore.MensagensRadio[0];
                 m_MissionMessage2 = m_Config.Lore.MensagensRadio[1];
             }
@@ -41,18 +41,26 @@ class ApartmentMission extends PNH_MissionBase
     {
         float distance = vector.Distance(player.GetPosition(), m_MissionPosition);
 
-        // 1. AVISOS DE PERÍMETRO
+        // GATILHO: APROXIMAÇÃO (Raio Externo)
         if (!m_OuterWarned && distance <= m_MissionZoneOuterRadius) {
             m_OuterWarned = true;
-            EnviarAviso(m_MissionInformant, "Você está se aproximando do prédio de " + m_SurvivorName + ". Cuidado, a área está infestada!");
+            string msgAprox = "Você está se aproximando do objetivo.";
+            if (m_Config.Lore && m_Config.Lore.MensagemAproximacao != "") 
+                msgAprox = m_Config.Lore.MensagemAproximacao + m_SurvivorName + ".";
+            
+            EnviarAviso(m_MissionInformant, msgAprox);
         }
 
+        // GATILHO: NO OBJETIVO (Raio Interno)
         if (!m_InnerWarned && distance <= m_MissionZoneInnerRadius) {
             m_InnerWarned = true;
-            EnviarAviso(m_MissionInformant, "Você chegou ao apartamento. Encontre o barril com o equipamento barricado e abra-o!");
+            string msgAlvo = "Objetivo localizado. Recupere a carga.";
+            if (m_Config.Lore && m_Config.Lore.MensagemNoObjetivo != "") 
+                msgAlvo = m_Config.Lore.MensagemNoObjetivo;
+            
+            EnviarAviso(m_MissionInformant, msgAlvo);
         }
 
-        // 2. GATILHO DE VITÓRIA: ABRIR O BARRIL DENTRO DO PRÉDIO
         if (!m_IsVictory && m_RewardContainer && m_RewardContainer.IsOpen())
         {
             FinalizarMissao(player);
@@ -62,14 +70,12 @@ class ApartmentMission extends PNH_MissionBase
     void FinalizarMissao(PlayerBase player)
     {
         m_IsVictory = true;
-        
-        string winMsg = "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName() + " recuperou o equipamento no apartamento de " + m_SurvivorName + "!";
-        PNH_Logger.Log("Missões", winMsg);
+        PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName());
 
-        string mensagemFinal = "Equipamento recuperado com sucesso!";
-        if (m_Config.Lore && m_Config.Lore.MensagemVitoria != "") {
+        // GATILHO: VITÓRIA
+        string mensagemFinal = "Missão cumprida!";
+        if (m_Config.Lore && m_Config.Lore.MensagemVitoria != "") 
             mensagemFinal = m_Config.Lore.MensagemVitoria;
-        }
 
         EnviarAviso("Comando PNH", mensagemFinal);
 
@@ -77,22 +83,15 @@ class ApartmentMission extends PNH_MissionBase
         m_MissionTimeout = m_MissionTime + config.ConfiguracoesGerais.TempoLimpezaSegundos;
     }
 
-    void EnviarAviso(string emissor, string msg)
-    {
-        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-        if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(emissor, msg), true);
-        else PNH_Utils.SendMessageToAll("[" + emissor + "] " + msg);
-    }
-
     override bool DeployMission()
     {
-        if (!m_Config || !m_Config.Ativa) return false;
+        if (!m_Config || !m_Config.Ativa || m_Deployed) return false;
+        m_Deployed = true;
 
         if (m_Config.Lore && m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 3) {
             m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_MissionLocation + " **.";
         }
 
-        // 1. ENCONTRAR O PRÉDIO DO APARTAMENTO
         Object missionBuilding = null;
         GetGame().GetObjectsAtPosition(m_MissionPosition, 20.0, m_ObjectList, m_ObjectCargoList);
         for (int b = 0; b < m_ObjectList.Count(); b++) {
@@ -102,62 +101,55 @@ class ApartmentMission extends PNH_MissionBase
             }
         }
 
-        vector baseSpawnPos = m_MissionPosition;
-
         if (missionBuilding)
         {
-            baseSpawnPos = missionBuilding.GetPosition();
+            // Spawn de Barricadas, Corpo e Barril (Lógica mantida)
+            SpawnApartmentAssets(missionBuilding);
+        }
 
-            // 2. CONSTRUIR AS BARRICADAS FÍSICAS
-            if (m_Config.Cenario && m_Config.Cenario.Barricadas)
-            {
-                for (int barIdx = 0; barIdx < m_Config.Cenario.Barricadas.Count(); barIdx++)
-                {
-                    PNH_MissionSettings_Barricada barricada = m_Config.Cenario.Barricadas[barIdx];
-                    vector worldPosBar = missionBuilding.ModelToWorld(barricada.PosicaoLocal.ToVector());
-                    Object barObj = GetGame().CreateObject(barricada.Classe, worldPosBar, false, false, true);
+        PNH_Logger.Log("Missões", "[PNH SYSTEM] MISSÃO_INICIADA: Apartment em " + m_MissionLocation + " | Coordenadas: " + m_MissionPosition.ToString());
+        return true;
+    }
 
-                    if (barObj) {
-                        vector buildingOri = missionBuilding.GetOrientation();
-                        vector localOri = barricada.OrientacaoLocal.ToVector();
-                        barObj.SetOrientation(Vector(buildingOri[0] + localOri[0], buildingOri[1] + localOri[1], buildingOri[2] + localOri[2]));
-                        m_MissionObjects.Insert(barObj);
-                    }
+    void SpawnApartmentAssets(Object missionBuilding)
+    {
+        // Barricadas
+        if (m_Config.Cenario && m_Config.Cenario.Barricadas) {
+            for (int i = 0; i < m_Config.Cenario.Barricadas.Count(); i++) {
+                PNH_Settings_Barricada bar = m_Config.Cenario.Barricadas[i];
+                Object bObj = GetGame().CreateObject(bar.Classe, missionBuilding.ModelToWorld(bar.PosicaoLocal.ToVector()), false, false, true);
+                if (bObj) {
+                    bObj.SetOrientation(missionBuilding.GetOrientation() + bar.OrientacaoLocal.ToVector());
+                    m_MissionObjects.Insert(bObj);
                 }
             }
-
-            // 3. SPAWN DO BARRIL DENTRO DO QUARTO
-            vector rewardWorldPos = missionBuilding.ModelToWorld(m_Config.PosicaoRecompensaLocal.ToVector());
-            m_RewardContainer = ItemBase.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, rewardWorldPos, false, false, true));
-        }
-        else
-        {
-            // Fallback caso o prédio não seja encontrado
-            PNH_Logger.Log("Missões", "[PNH_CORE] AVISO: Prédio Apartment não detectado! Usando ponto zero.");
-            m_RewardContainer = ItemBase.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_MissionPosition, false, false, true));
         }
 
-        // 4. PREENCHER RECOMPENSA (Lendo a lista de Loot do JSON)
-        if (m_RewardContainer && m_Config.RecompensasHorda.Loadouts && m_Config.RecompensasHorda.Loadouts.Count() > 0)
-        {
+        // Corpo
+        vector cPos = missionBuilding.ModelToWorld(m_Config.PosicaoCorpoLocal.ToVector());
+        m_SurvivorCorpse = GetGame().CreateObject(m_Config.ClasseCorpo, cPos, false, false, true);
+        if (m_SurvivorCorpse) {
+            EntityAI ent = EntityAI.Cast(m_SurvivorCorpse);
+            ent.SetHealth("", "", 0);
+            ent.SetOrientation(missionBuilding.GetOrientation() + m_Config.OrientacaoCorpoLocal.ToVector());
+            m_MissionObjects.Insert(m_SurvivorCorpse);
+        }
+
+        // Barril
+        vector rPos = missionBuilding.ModelToWorld(m_Config.PosicaoRecompensaLocal.ToVector());
+        m_RewardContainer = ItemBase.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, rPos, false, false, true));
+        if (m_RewardContainer) {
             auto loadout = m_Config.RecompensasHorda.Loadouts.GetRandomElement();
-            for (int i = 0; i < loadout.Itens.Count(); i++) m_RewardContainer.GetInventory().CreateInInventory(loadout.Itens[i]);
+            for (int j = 0; j < loadout.Itens.Count(); j++) m_RewardContainer.GetInventory().CreateInInventory(loadout.Itens[j]);
             m_RewardContainer.Close();
             m_MissionObjects.Insert(m_RewardContainer);
         }
+    }
 
-        // 5. SPAWN DA HORDA
-        if (m_Config.Dificuldade && m_Config.Dificuldade.ClassesZumbis.Count() > 0)
-        {
-            for (int z = 0; z < m_Config.Dificuldade.QuantidadeHordaFinal; z++)
-            {
-                vector zPos = baseSpawnPos + Vector(Math.RandomFloat(-20, 20), 0, Math.RandomFloat(-20, 20));
-                zPos[1] = GetGame().SurfaceY(zPos[0], zPos[2]);
-                m_MissionAIs.Insert(GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), zPos, false, true, true));
-            }
-        }
-
-        PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Apartamento de " + m_SurvivorName + " em " + m_MissionLocation);
-        return true;
+    void EnviarAviso(string emissor, string msg)
+    {
+        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+        if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(emissor, msg), true);
+        else PNH_Utils.SendMessageToAll("[" + emissor + "] " + msg);
     }
 }

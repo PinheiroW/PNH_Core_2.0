@@ -13,6 +13,7 @@ class PNH_MissionSettings_Cenario {
 // --- ESTRUTURAS ESPECÍFICAS DE RECOMPENSAS ---
 class PNH_MissionSettings_Loadout {
     ref array<string> Itens;
+    void PNH_MissionSettings_Loadout() { Itens = new array<string>; }
 }
 
 class PNH_MissionSettings_RecompensasHorda {
@@ -24,11 +25,13 @@ class PNH_MissionSettings_RecompensasHorda {
 class PNH_MissionSettings_RecompensasSimples {
     string Container;
     ref array<string> Itens;
+    void PNH_MissionSettings_RecompensasSimples() { Itens = new array<string>; }
 }
 
 class PNH_MissionSettings_Piloto {
     string Classe;
     ref array<string> Itens;
+    void PNH_MissionSettings_Piloto() { Itens = new array<string>; }
 }
 
 class PNH_MissionSettings_Alvo {
@@ -41,19 +44,34 @@ class PNH_MissionSettings_Lore {
     string Informante;
     ref array<string> NomesSobreviventes;
     ref array<string> MensagensRadio;
-    string MensagemVitoria; 
-    string MensagemFaseB;
+    
+    // Gatilhos de Texto
+    string MensagemAproximacao;       // Gatilho: Raio Externo
+    string MensagemNoObjetivo;        // Gatilho: Raio Interno
+    string MensagemVitoria;           // Gatilho: Sucesso
+    string MensagemFaseB;             // Gatilho: Evento Especial (se houver)
+
+    void PNH_MissionSettings_Lore() {
+        NomesSobreviventes = new array<string>;
+        MensagensRadio = new array<string>;
+    }
 }
 
 class PNH_MissionSettings_Dificuldade {
     int QuantidadeHordaFinal;
     ref array<string> ClassesZumbis;
+    void PNH_MissionSettings_Dificuldade() { ClassesZumbis = new array<string>; }
 }
 
 class PNH_MissionSettings_Locais {
     ref array<string> SpawnsBarril;
     ref array<string> SpawnsZumbis;
     ref array<string> SpawnsFogo;
+    void PNH_MissionSettings_Locais() {
+        SpawnsBarril = new array<string>;
+        SpawnsZumbis = new array<string>;
+        SpawnsFogo = new array<string>;
+    }
 }
 
 // --- DADOS ESPECÍFICOS DAS MISSÕES ---
@@ -81,9 +99,7 @@ class PNH_MissionData_Transport {
     
     void PNH_MissionData_Transport() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.MensagensRadio = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasSimples();
-        Recompensas.Itens = new array<string>;
         RoupasNPCColeta = new array<string>;
         RoupasNPCEntrega = new array<string>;
     }
@@ -101,10 +117,7 @@ class PNH_MissionData_Graveyard {
     
     void PNH_MissionData_Graveyard() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.NomesSobreviventes = new array<string>;
-        Lore.MensagensRadio = new array<string>;
         Dificuldade = new PNH_MissionSettings_Dificuldade();
-        Dificuldade.ClassesZumbis = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
     }
 }
@@ -136,13 +149,10 @@ class PNH_MissionData_CityStore {
     
     void PNH_MissionData_CityStore() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.MensagensRadio = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
         RoupaNPC = new array<string>;
         Cenario = new PNH_MissionSettings_Cenario(); 
-        
         Dificuldade = new PNH_MissionSettings_Dificuldade();
-        Dificuldade.ClassesZumbis = new array<string>;
     }
 }
 
@@ -158,10 +168,8 @@ class PNH_MissionData_BearHunt {
 
     void PNH_MissionData_BearHunt() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.MensagensRadio = new array<string>;
         Alvo = new PNH_MissionSettings_Alvo();
         Recompensas = new PNH_MissionSettings_RecompensasSimples();
-        Recompensas.Itens = new array<string>;
     }
 }
 
@@ -170,9 +178,11 @@ class PNH_MissionData_Apartment {
     float TempoLimiteSegundos;
     float RaioAvisoExterno;
     float RaioAvisoInterno;
-    
-    // NOVO: Coordenada exata de onde o barril vai nascer dentro do quarto
     string PosicaoRecompensaLocal; 
+    
+    string ClasseCorpo;
+    string PosicaoCorpoLocal;
+    string OrientacaoCorpoLocal;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -181,10 +191,7 @@ class PNH_MissionData_Apartment {
 
     void PNH_MissionData_Apartment() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.NomesSobreviventes = new array<string>;
-        Lore.MensagensRadio = new array<string>;
         Dificuldade = new PNH_MissionSettings_Dificuldade();
-        Dificuldade.ClassesZumbis = new array<string>;
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
         Cenario = new PNH_MissionSettings_Cenario();
     }
@@ -204,12 +211,8 @@ class PNH_MissionData_PlaneCrash {
 
     void PNH_MissionData_PlaneCrash() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.MensagensRadio = new array<string>;
         Dificuldade = new PNH_MissionSettings_Dificuldade();
-        Dificuldade.ClassesZumbis = new array<string>;
         Locais = new PNH_MissionSettings_Locais();
-        Locais.SpawnsBarril = new array<string>;
-        Locais.SpawnsFogo = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
     }
 }
@@ -227,11 +230,8 @@ class PNH_MissionData_Horde {
 
     void PNH_MissionData_Horde() {
         Lore = new PNH_MissionSettings_Lore();
-        Lore.MensagensRadio = new array<string>;
         Dificuldade = new PNH_MissionSettings_Dificuldade();
-        Dificuldade.ClassesZumbis = new array<string>;
         Piloto = new PNH_MissionSettings_Piloto();
-        Piloto.Itens = new array<string>;
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
     }
 }
