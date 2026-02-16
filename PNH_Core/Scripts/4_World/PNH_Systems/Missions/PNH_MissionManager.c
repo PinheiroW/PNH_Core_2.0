@@ -13,7 +13,13 @@ class PNH_MissionManager
         m_UpdateTimer = 0;
         m_MissionState = 0;
         PNH_MissionSettings.Load();
-        m_CooldownTimer = 60; 
+        
+        // Puxa o tempo direto da nova categoria ConfiguracoesGerais
+        if (PNH_MissionSettings.GetData() && PNH_MissionSettings.GetData().ConfiguracoesGerais) {
+            m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60;
+        } else {
+            m_CooldownTimer = 60; 
+        }
     }
 
     static PNH_MissionManager GetInstance() { return m_Instance; }
@@ -80,12 +86,13 @@ class PNH_MissionManager
             return;
         }
 
-        if (config.DebugMission != "") selectedMission = config.DebugMission;
+        // NOVO CAMINHO CORRIGIDO: config.DebugSettings.DebugMission
+        if (config.DebugSettings.DebugMission != "") selectedMission = config.DebugSettings.DebugMission;
         else selectedMission = config.MissoesAtivas.GetRandomElement();
 
-        // 1. REGISTO DE MISSÕES: Agora conhece a BearHunt
         if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
         else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
+        else if (selectedMission == "Horde") m_ActiveMission = new HordeMission(); // ADICIONE ESTA!
         else 
         {
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida: " + selectedMission);
@@ -122,18 +129,14 @@ class PNH_MissionManager
         {
             m_MissionState = 1;
 
-            // --- NOTIFICAÇÃO DISCORD E LOG DO SCRIPT ---
             string posStr = m_ActiveMission.m_MissionPosition.ToString();
             string logDiscord = "[PNH_CORE] MISSÃO_INICIADA: " + selectedMission + " em " + m_ActiveMission.m_MissionLocation + " | Coordenadas: " + posStr;
             
-            // Força a escrita no arquivo script.log do servidor
             Print("[PNH SYSTEM] " + logDiscord); 
-            
-            // Envia para o Webhook do Discord (Categoria: Missões)
             PNH_Logger.Log("Missões", logDiscord); 
-            // --------------------------------------------
 
-            if (config.UsarPDA) 
+            // NOVO CAMINHO: config.ConfiguracoesGerais.UsarPDA
+            if (config.ConfiguracoesGerais.UsarPDA) 
             {
                 GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", "[ALERTA] Novo contrato disponível. Verifique o seu PDA."), true);
             }
@@ -146,8 +149,6 @@ class PNH_MissionManager
         }
         else
         {
-            // 2. CORREÇÃO DO SPAM DE LOG
-            // Se a missão abortou (ex: Ativa = false no JSON), limpa a missão atual e tenta sortear outra em 10 segundos.
             m_ActiveMission = null;
             m_CooldownTimer = 10;
         }
@@ -158,7 +159,8 @@ class PNH_MissionManager
         if (m_ActiveMission)
         {
             PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-            if (config.UsarPDA)
+            // NOVO CAMINHO
+            if (config.ConfiguracoesGerais.UsarPDA)
             {
                 GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(m_ActiveMission.m_MissionInformant, m_ActiveMission.m_MissionMessage1), true);
                 GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendExtraPDAMessage, 3000, false, m_ActiveMission.m_MissionMessage2);
@@ -181,6 +183,7 @@ class PNH_MissionManager
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
         m_ActiveMission = null; 
         m_MissionState = 0;
-        m_CooldownTimer = PNH_MissionSettings.GetData().TempoEntreMissoes * 60; 
+        // NOVO CAMINHO DE TEMPO
+        m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60; 
     }
 }

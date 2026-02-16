@@ -164,7 +164,7 @@ class ApartmentMission extends PNH_MissionBase
         {
             m_ProximityWarned = true;
             string msg = "Estou me aproximando do local nos apartamentos. Câmbio.";
-            if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg), true);
+            if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg), true);
             else PNH_Utils.SendMessageToAll("[RADIO PNH] " + msg);
         }
 
@@ -172,7 +172,7 @@ class ApartmentMission extends PNH_MissionBase
         {
             m_DoorProximityWarned = true;
             string msg2 = "Você encontrou o local da missão!";
-            if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg2), true);
+            if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg2), true);
             else PNH_Utils.SendMessageToAll("[RADIO PNH] " + msg2);
         }
 
@@ -180,7 +180,7 @@ class ApartmentMission extends PNH_MissionBase
         {
             m_SurvivorFound = true;
             string msg3 = "Encontrei o corpo de " + SurvivorName + "! O barril deve estar escondido por aqui!";
-            if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg3), true);
+            if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg3), true);
             else PNH_Utils.SendMessageToAll("[RADIO PNH] " + msg3);
             
             PNH_Logger.Log("Missões", "[PNH_CORE] CORPO_ENCONTRADO: O corpo do sobrevivente foi localizado.");
@@ -193,7 +193,7 @@ class ApartmentMission extends PNH_MissionBase
             if (stash && stash.IsOpen())
             {
                 string msg4 = "Abri o barril! Merda, o barulho atraiu uma horda do lado de fora!";
-                if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg4), true);
+                if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Operador", msg4), true);
                 else PNH_Utils.SendMessageToAll("[RADIO PNH] " + msg4);
                 MissionFinal();
             }
@@ -205,7 +205,7 @@ class ApartmentMission extends PNH_MissionBase
             string playerName = player.GetIdentity().GetName();
             string successMsg = "[PNH_CORE] MISSÃO_CONCLUÍDA: [" + playerName + "] Sobrevivi à horda nos apartamentos.";
             
-            if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", successMsg), true);
+            if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", successMsg), true);
             else PNH_Utils.SendMessageToAll("[RADIO PNH] " + successMsg);
             
             PNH_Logger.Log("Missões", successMsg);

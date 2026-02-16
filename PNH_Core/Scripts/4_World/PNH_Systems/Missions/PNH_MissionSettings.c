@@ -1,57 +1,65 @@
-class PNH_MissionSettingsData
-{
+// --- SUB-CLASSES DE ORGANIZAÇÃO DO JSON ---
+class PNH_MissionSettings_Debug {
+    bool DebugMode;
+    string DebugMission;
+    bool DebugShowInfo;
+}
+
+class PNH_MissionSettings_Geral {
+    int TempoEntreMissoesMinutos;
+    int TempoLimpezaSegundos;
     bool UsarPDA;
-    int TempoEntreMissoes; // Em minutos
-    string DebugMission;   // Deixa vazio "" para aleatório, ou escreve o nome da missão (ex: "Apartment") para forçar testes
+    bool ModoRP;
+}
+
+// --- CLASSE PRINCIPAL DOS DADOS MESTRES ---
+class PNH_MissionSettingsData {
+    // CORREÇÃO: Usando 'DebugSettings' para evitar conflito com a classe nativa do DayZ
+    ref PNH_MissionSettings_Debug DebugSettings; 
+    ref PNH_MissionSettings_Geral ConfiguracoesGerais;
     ref array<string> MissoesAtivas;
 
-    void PNH_MissionSettingsData()
-    {
+    // Inicializa as categorias para evitar Null Pointers
+    void PNH_MissionSettingsData() {
+        DebugSettings = new PNH_MissionSettings_Debug();
+        ConfiguracoesGerais = new PNH_MissionSettings_Geral();
         MissoesAtivas = new array<string>;
     }
 }
 
-class PNH_MissionSettings
-{
-    // Caminho da pasta oficial PNH no profiles
-    private static const string SETTINGS_PATH = "$profile:PNH/PNH_MissionSettings.json";
-    private static ref PNH_MissionSettingsData m_Data;
+// --- GERENCIADOR DO ARQUIVO ---
+class PNH_MissionSettings {
+    static ref PNH_MissionSettingsData m_Data;
 
-    static void Load()
-    {
-        if (!m_Data) m_Data = new PNH_MissionSettingsData();
+    static void Load() {
+        string dirPath = "$profile:PNH/";
+        string filePath = dirPath + "PNH_MissionSettings.json";
 
-        // Garante que a pasta PNH existe antes de carregar ou salvar
-        if (!FileExist("$profile:PNH")) 
-        {
-            MakeDirectory("$profile:PNH");
-        }
+        if (!FileExist(dirPath)) MakeDirectory(dirPath);
 
-        if (FileExist(SETTINGS_PATH))
-        {
-            JsonFileLoader<PNH_MissionSettingsData>.JsonLoadFile(SETTINGS_PATH, m_Data);
-        }
-        else
-        {
-            // Cria as definições padrão caso o ficheiro não exista (Apenas a base limpa)
-            m_Data.UsarPDA = true;
-            m_Data.TempoEntreMissoes = 35;
-            m_Data.DebugMission = ""; 
+        m_Data = new PNH_MissionSettingsData();
+
+        if (FileExist(filePath)) {
+            JsonFileLoader<PNH_MissionSettingsData>.JsonLoadFile(filePath, m_Data);
+        } else {
+            // Se o arquivo não existir, gera um JSON padrão automaticamente!
+            m_Data.DebugSettings.DebugMode = false;
+            m_Data.DebugSettings.DebugMission = "";
+            m_Data.DebugSettings.DebugShowInfo = false;
             
-            // Insere a única missão ativa e configurada do mod
+            m_Data.ConfiguracoesGerais.TempoEntreMissoesMinutos = 5;
+            m_Data.ConfiguracoesGerais.TempoLimpezaSegundos = 60;
+            m_Data.ConfiguracoesGerais.UsarPDA = true;
+            m_Data.ConfiguracoesGerais.ModoRP = false;
+            
             m_Data.MissoesAtivas.Insert("Apartment");
+            m_Data.MissoesAtivas.Insert("BearHunt");
             
-            Save();
+            JsonFileLoader<PNH_MissionSettingsData>.JsonSaveFile(filePath, m_Data);
         }
     }
 
-    static void Save()
-    {
-        JsonFileLoader<PNH_MissionSettingsData>.JsonSaveFile(SETTINGS_PATH, m_Data);
-    }
-
-    static PNH_MissionSettingsData GetData()
-    {
+    static PNH_MissionSettingsData GetData() {
         if (!m_Data) Load();
         return m_Data;
     }
