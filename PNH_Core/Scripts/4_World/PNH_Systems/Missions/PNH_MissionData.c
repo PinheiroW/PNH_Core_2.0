@@ -226,26 +226,30 @@ class PNH_MissionData_Graveyard {
 class PNH_MissionData_CityStore {
     bool Ativa;
     float TempoLimiteSegundos;
-    float RaioAvisoExterno; // 90.0
-    float RaioAvisoInterno; // 20.0
+    float RaioAvisoExterno; 
+    float RaioAvisoInterno; 
     
-    string ItemCientifico;  // Cogumelos
-    int QtdItemCientifico;  // 10
-    string ItemEstabilizador; // Antibióticos
-    int QtdItemEstabilizador; // 4
+    string ItemCientifico;  
+    int QtdItemCientifico;  
+    string ItemEstabilizador; 
+    int QtdItemEstabilizador; 
     
     string PosicaoEntrega; 
     string CidadeEntrega;
-    string ClasseNPC;       // Ex: SurvivorM_Mirek
-    ref array<string> RoupaNPC; // Conjunto NBC
+    string ClasseNPC;       
+    ref array<string> RoupaNPC; 
     
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_RecompensasHorda Recompensas;
+    
+    // ---> NOVO: SUPORTE A BARRICADAS <---
+    ref PNH_MissionSettings_Cenario Cenario; 
     
     void PNH_MissionData_CityStore() {
         Lore = new PNH_MissionSettings_Lore();
         Lore.MensagensRadio = new array<string>;
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
         RoupaNPC = new array<string>;
+        Cenario = new PNH_MissionSettings_Cenario(); // Inicializa o cenário
     }
 }

@@ -148,7 +148,7 @@ class CityStoreMission extends PNH_MissionBase
             m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_Config.CidadeEntrega + " **.";
         }
 
-        // Spawn NPC NBC no destino (Posto Policial)
+        // 1. SPAWN NPC NBC NO DESTINO
         vector deliveryPos = m_Config.PosicaoEntrega.ToVector();
         deliveryPos[1] = GetGame().SurfaceY(deliveryPos[0], deliveryPos[2]);
         m_NPC = GetGame().CreateObject(m_Config.ClasseNPC, deliveryPos, false, false, true);
@@ -161,21 +161,56 @@ class CityStoreMission extends PNH_MissionBase
             m_MissionObjects.Insert(m_NPC);
         }
 
-        // Spawn de Itens Biológicos no Mercado 
-        // Os cogumelos e antibióticos vão nascer ao redor da coordenada central do mercado
+        // 2. ENCONTRAR O MERCADO PARA REFERÊNCIA DE SPAWN
+        Object missionBuilding;
+        array<Object> objects = new array<Object>;
+        GetGame().GetObjectsAtPosition(m_MissionPosition, 5.0, objects, null);
+        for (int b = 0; b < objects.Count(); b++) {
+            if (objects[b].GetType().Contains("Land_City_Store")) {
+                missionBuilding = objects[b];
+                break;
+            }
+        }
+
+        vector baseSpawnPos = m_MissionPosition;
+        if (missionBuilding) 
+        {
+            baseSpawnPos = missionBuilding.ModelToWorld("0 -4.5 0"); // Altura do chão do mercado interno
+
+            // 3. CONSTRUIR AS BARRICADAS
+            if (m_Config.Cenario && m_Config.Cenario.Barricadas) 
+            {
+                for (int barIdx = 0; barIdx < m_Config.Cenario.Barricadas.Count(); barIdx++) 
+                {
+                    PNH_MissionSettings_Barricada barricada = m_Config.Cenario.Barricadas[barIdx];
+                    vector localPos = barricada.PosicaoLocal.ToVector();
+                    vector localOri = barricada.OrientacaoLocal.ToVector();
+                    
+                    // Transforma a coordenada local para o mundo real respeitando a rotação da loja
+                    vector worldPos = missionBuilding.ModelToWorld(localPos);
+                    Object barObj = GetGame().CreateObject(barricada.Classe, worldPos, false, false, true);
+                    
+                    if (barObj) {
+                        vector buildingOri = missionBuilding.GetOrientation();
+                        // Ajusta a rotação do objeto barricada relativo à loja
+                        barObj.SetOrientation(Vector(buildingOri[0] + localOri[0], buildingOri[1] + localOri[1], buildingOri[2] + localOri[2]));
+                        m_MissionObjects.Insert(barObj);
+                    }
+                }
+            }
+        }
+
+        // 4. SPAWN DE ITENS BIOLÓGICOS NO CHÃO DO MERCADO
         for (int j = 0; j < m_Config.QtdItemCientifico; j++) {
-            vector mushPos = m_MissionPosition + Vector(Math.RandomFloat(-5, 5), 0, Math.RandomFloat(-5, 5));
-            mushPos[1] = GetGame().SurfaceY(mushPos[0], mushPos[2]);
+            vector mushPos = baseSpawnPos + Vector(Math.RandomFloat(-4, 4), 0.1, Math.RandomFloat(-4, 4));
             m_MissionObjects.Insert(GetGame().CreateObject(m_Config.ItemCientifico, mushPos, false, false, true));
         }
         
         for (int k = 0; k < m_Config.QtdItemEstabilizador; k++) {
-            vector medPos = m_MissionPosition + Vector(Math.RandomFloat(-3, 3), 0, Math.RandomFloat(-3, 3));
-            medPos[1] = GetGame().SurfaceY(medPos[0], medPos[2]);
+            vector medPos = baseSpawnPos + Vector(Math.RandomFloat(-3, 3), 0.1, Math.RandomFloat(-3, 3));
             m_MissionObjects.Insert(GetGame().CreateObject(m_Config.ItemEstabilizador, medPos, false, false, true));
         }
 
         PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Operação Micélio iniciada em " + m_MissionLocation);
         return true;
     }
-}

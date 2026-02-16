@@ -14,7 +14,6 @@ class PNH_MissionManager
         m_MissionState = 0;
         PNH_MissionSettings.Load();
         
-        // Puxa o tempo direto da nova categoria ConfiguracoesGerais
         if (PNH_MissionSettings.GetData() && PNH_MissionSettings.GetData().ConfiguracoesGerais) {
             m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60;
         } else {
@@ -86,7 +85,6 @@ class PNH_MissionManager
             return;
         }
 
-        // NOVO CAMINHO CORRIGIDO: config.DebugSettings.DebugMission
         if (config.DebugSettings.DebugMission != "") selectedMission = config.DebugSettings.DebugMission;
         else selectedMission = config.MissoesAtivas.GetRandomElement();
 
@@ -96,7 +94,7 @@ class PNH_MissionManager
         else if (selectedMission == "PlaneCrash") m_ActiveMission = new PlaneCrashMission();
         else if (selectedMission == "Transport") m_ActiveMission = new TransportMission();
         else if (selectedMission == "Graveyard") m_ActiveMission = new GraveyardMission();
-        else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission(); // CORRETO
+        else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission();
         else 
         {
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida: " + selectedMission);
@@ -127,7 +125,14 @@ class PNH_MissionManager
                 m_ActiveMission.m_MissionLocation = cityName;
             }
         }
-        else { m_ActiveMission = null; m_CooldownTimer = 10; return; }
+        else 
+        { 
+            // ALERTA DE COORDENADA INEXISTENTE ADICIONADO AQUI
+            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada encontrada em PNH_EventsWorldData para a missão: " + selectedMission);
+            m_ActiveMission = null; 
+            m_CooldownTimer = 30; 
+            return; 
+        }
 
         if (m_ActiveMission.DeployMission())
         {
@@ -139,7 +144,6 @@ class PNH_MissionManager
             Print("[PNH SYSTEM] " + logDiscord); 
             PNH_Logger.Log("Missões", logDiscord); 
 
-            // NOVO CAMINHO: config.ConfiguracoesGerais.UsarPDA
             if (config.ConfiguracoesGerais.UsarPDA) 
             {
                 GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", "[ALERTA] Novo contrato disponível. Verifique o seu PDA."), true);
@@ -163,7 +167,6 @@ class PNH_MissionManager
         if (m_ActiveMission)
         {
             PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-            // NOVO CAMINHO
             if (config.ConfiguracoesGerais.UsarPDA)
             {
                 GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(m_ActiveMission.m_MissionInformant, m_ActiveMission.m_MissionMessage1), true);
@@ -187,7 +190,6 @@ class PNH_MissionManager
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
         m_ActiveMission = null; 
         m_MissionState = 0;
-        // NOVO CAMINHO DE TEMPO
         m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60; 
     }
 }
