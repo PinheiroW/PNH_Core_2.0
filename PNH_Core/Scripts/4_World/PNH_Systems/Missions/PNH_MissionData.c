@@ -48,6 +48,7 @@ class PNH_MissionSettings_Locais {
     ref array<string> SpawnsPredio;
     ref array<string> SpawnsBarril;
     ref array<string> SpawnsZumbis;
+    ref array<string> SpawnsFogo;
 }
 
 // --- ESTRUTURAS DE RECOMPENSA ---
@@ -111,7 +112,7 @@ class PNH_MissionData_BearHunt {
     }
 }
 
-// 3. DADOS DA MISSÃO HORDE (A QUE FALTAVA)
+// 3. DADOS DA MISSÃO HORDE
 class PNH_MissionData_Horde {
     bool Ativa;
     float TempoLimiteSegundos;
@@ -135,5 +136,89 @@ class PNH_MissionData_Horde {
         Piloto.Itens = new array<string>;
         
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
+    }
+}
+
+// 4. DADOS DA MISSÃO PLANE CRASH
+class PNH_MissionData_PlaneCrash {
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno;
+    float RaioAvisoInterno;
+    float RaioVitoria; 
+    
+    string ObjetoCentral; 
+    
+    ref PNH_MissionSettings_Lore Lore;
+    ref PNH_MissionSettings_Dificuldade Dificuldade;
+    ref PNH_MissionSettings_Locais Locais;
+    ref PNH_MissionSettings_RecompensasSimples Recompensas;
+    
+    void PNH_MissionData_PlaneCrash() {
+        Lore = new PNH_MissionSettings_Lore();
+        Lore.MensagensRadio = new array<string>;
+        
+        Dificuldade = new PNH_MissionSettings_Dificuldade();
+        Dificuldade.ClassesZumbis = new array<string>;
+        
+        Locais = new PNH_MissionSettings_Locais();
+        Locais.SpawnsBarril = new array<string>;
+        Locais.SpawnsZumbis = new array<string>;
+        Locais.SpawnsFogo = new array<string>;
+        
+        Recompensas = new PNH_MissionSettings_RecompensasSimples();
+        Recompensas.Itens = new array<string>;
+    }
+}
+
+class PNH_MissionData_Transport {
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno;
+    float RaioAvisoInterno;
+    
+    string ClasseVeiculo; 
+    string ItemCarga;     
+    int QuantidadeCargaNecessaria;
+    
+    string PosicaoEntrega; 
+    string CidadeEntrega;  
+    
+    // CONFIGURAÇÃO DOS DOIS NPCs
+    string ClasseNPCColeta;
+    ref array<string> RoupasNPCColeta;
+    string ClasseNPCEntrega;
+    ref array<string> RoupasNPCEntrega;
+    
+    ref PNH_MissionSettings_Lore Lore;
+    ref PNH_MissionSettings_RecompensasSimples Recompensas;
+    
+    void PNH_MissionData_Transport() {
+        Lore = new PNH_MissionSettings_Lore();
+        Lore.MensagensRadio = new array<string>;
+        Recompensas = new PNH_MissionSettings_RecompensasSimples();
+        Recompensas.Itens = new array<string>;
+        RoupasNPCColeta = new array<string>;
+        RoupasNPCEntrega = new array<string>;
+    }
+}
+
+class PNH_MissionData_Graveyard {
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno; // 90.0
+    float RaioAvisoInterno; // 20.0
+    
+    ref PNH_MissionSettings_Lore Lore;
+    ref PNH_MissionSettings_Dificuldade Dificuldade;
+    ref PNH_MissionSettings_RecompensasHorda Recompensas; 
+    
+    void PNH_MissionData_Graveyard() {
+        Lore = new PNH_MissionSettings_Lore();
+        Lore.NomesSobreviventes = new array<string>;
+        Lore.MensagensRadio = new array<string>;
+        Dificuldade = new PNH_MissionSettings_Dificuldade();
+        Dificuldade.ClassesZumbis = new array<string>;
+        Recompensas = new PNH_MissionSettings_RecompensasHorda();
     }
 }
