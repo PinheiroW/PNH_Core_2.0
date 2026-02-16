@@ -17,12 +17,10 @@ class BearHuntMission extends PNH_MissionBase
     // O CÉREBRO DA MISSÃO QUE LÊ O JSON
     ref PNH_MissionData_BearHunt m_Config;
 
-    override bool IsExtended() return true;
+    override bool IsExtended() { return true; }
     
     void BearHuntMission()
     {   
-        m_MissionExtended = true;
-
         // 1. CARREGAMENTO DO JSON
         string caminhoJson = "$profile:PNH/Missions/BearHunt.json";
         m_Config = new PNH_MissionData_BearHunt();
@@ -72,7 +70,7 @@ class BearHuntMission extends PNH_MissionBase
             PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_WinnerName + " extraiu o tecido mutante!");
         }
         m_RewardsSpawned = true; 
-        m_MsgNum = -1;
+        // A variável m_MsgNum foi removida daqui!
     }
 
     override bool DeployMission()
@@ -80,14 +78,14 @@ class BearHuntMission extends PNH_MissionBase
         // Trava de segurança Anti-Crash
         if (!m_Config) return false;
 
-        if (m_MissionExtended) {
+        if (IsExtended()) {
             PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Caçada Alpha em " + m_MissionLocation);
             return true;
         }
         return false;
     }
 
-    // --- NOVO SISTEMA DE VERIFICAÇÃO E ALERTAS (Estilo Apartment) ---
+    // --- SISTEMA DE VERIFICAÇÃO E ALERTAS ---
     override void PlayerChecks(PlayerBase player)
     {
         float distance = vector.Distance(player.GetPosition(), m_MissionPosition);
@@ -123,7 +121,6 @@ class BearHuntMission extends PNH_MissionBase
             if (config.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", successMsg), true);
             else PNH_Utils.SendMessageToAll("[RADIO PNH] " + successMsg);
             
-            // Instancia o baú com as recompensas dinâmicas ao atingir o objetivo
             this.SpawnRewards();
             this.MissionFinal();
         }
