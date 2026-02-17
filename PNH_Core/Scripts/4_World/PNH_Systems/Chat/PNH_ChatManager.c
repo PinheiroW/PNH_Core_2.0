@@ -9,10 +9,50 @@ class PNH_ChatManager
         string commandLine = message.Substring(1, message.Length() - 1);
         TStringArray args = new TStringArray;
         commandLine.Split(" ", args);
+        if (args.Count() == 0) return false;
+        
         string command = args.Get(0);
         command.ToLower();
 
         PNH_MissionManager manager = PNH_MissionManager.GetInstance();
+
+        // =======================================================
+        // --- COMANDO: STATUS / PERFIL DO JOGADOR ---
+        // =======================================================
+        if (command == "status" || command == "perfil")
+        {
+            if (!player || !player.GetIdentity()) return true;
+            
+            string plainId = player.GetIdentity().GetPlainId();
+            string pName = player.GetIdentity().GetName();
+            
+            PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(plainId, pName);
+            PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+            
+            if (pData && settings)
+            {
+                string rankName = "Recruta";
+                int nextXP = settings.TabelaXP.XP_Mercenario;
+                string nextRankName = "Mercenario";
+                
+                if (pData.Patente == 2) { rankName = "Mercenario"; nextXP = settings.TabelaXP.XP_Especialista; nextRankName = "Especialista"; }
+                else if (pData.Patente == 3) { rankName = "Especialista"; nextXP = settings.TabelaXP.XP_Lenda; nextRankName = "Lenda"; }
+                else if (pData.Patente == 4) { rankName = "Lenda"; nextXP = 0; nextRankName = "N/A"; }
+
+                // CORREÇÃO ENFUSION: Não usar operador ternário (? :)
+                string statusMissao = "NAO";
+                if (pData.TemMissaoAtiva) statusMissao = "SIM";
+
+                PNH_Utils.SendMessage(player, "------- PERFIL PNH 2.0 -------");
+                PNH_Utils.SendMessage(player, "Operador: " + pName);
+                PNH_Utils.SendMessage(player, "Patente: " + rankName);
+                PNH_Utils.SendMessage(player, "XP Atual: " + pData.XP);
+                if (nextXP > 0) PNH_Utils.SendMessage(player, "Proximo Nivel: " + (nextXP - pData.XP) + " XP para " + nextRankName);
+                PNH_Utils.SendMessage(player, "Missao Ativa: " + statusMissao);
+                PNH_Utils.SendMessage(player, "------------------------------");
+            }
+            return true;
+        }
 
         // =======================================================
         // --- COMANDO: ACEITAR CONTRATO ---
@@ -21,22 +61,21 @@ class PNH_ChatManager
         {
             if (!manager || !manager.m_ActiveMission)
             {
-                PNH_Utils.SendMessage(player, "PNH: Nenhuma operação disponível no momento. Aguarde o rádio.");
+                PNH_Utils.SendMessage(player, "PNH: Nenhuma operacao disponivel no momento. Aguarde o radio.");
                 return true;
             }
 
             if (manager.m_ActiveMission.m_MissionAccepted)
             {
-                PNH_Utils.SendMessage(player, "PNH: Este contrato já foi assinado por outro mercenário.");
+                PNH_Utils.SendMessage(player, "PNH: Este contrato ja foi assinado por outro mercenario.");
                 return true;
             }
 
-            // Verifica proximidade com os NPCs QuestGivers
-            PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+            PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
             bool pertoDeNPC = false;
             string npcName = "Informante";
 
-            foreach (PNH_MissionSettings_NPC npc : settings.NPCsQuestGivers)
+            foreach (PNH_MissionSettings_NPC npc : config.NPCsQuestGivers)
             {
                 if (vector.Distance(player.GetPosition(), npc.Posicao.ToVector()) < 5.0)
                 {
@@ -48,23 +87,18 @@ class PNH_ChatManager
 
             if (!pertoDeNPC)
             {
-                PNH_Utils.SendMessage(player, "PNH: Você precisa estar diante de um oficial PNH para assinar o contrato.");
+                PNH_Utils.SendMessage(player, "PNH: Voce precisa estar diante de um oficial PNH para assinar o contrato.");
                 return true;
             }
 
-            // --- EXECUÇÃO DO CONTRATO ---
             manager.m_ActiveMission.AcceptContract(player, manager.m_ActiveMission.m_MissionTier, manager.m_ActiveMission.m_MissionType);
             
-            // ATIVA O SPAWN FÍSICO (Zumbis/Itens) NO MAPA
             if (manager.m_ActiveMission.DeployMission())
             {
-                PNH_Utils.SendMessage(player, "===================================");
-                PNH_Utils.SendMessage(player, "CONTRATO ASSINADO COM: " + npcName);
-                PNH_Utils.SendMessage(player, "Sua missão foi marcada no setor. Boa sorte!");
-                PNH_Utils.SendMessage(player, "===================================");
-                PNH_Utils.SendMessageToAll("[RÁDIO PNH] Um mercenário fechou o contrato. Operação em curso!");
+                PNH_Utils.SendMessage(player, "=== CONTRATO ASSINADO COM: " + npcName + " ===");
+                PNH_Utils.SendMessage(player, "O seu alvo esta em: " + manager.m_ActiveMission.m_MissionLocation);
+                PNH_Utils.SendMessageToAll("[RADIO PNH] Um mercenario fechou o contrato de " + manager.m_ActiveMission.m_MissionLocation + "!");
             }
-
             return true;
         }
 
@@ -79,7 +113,7 @@ class PNH_ChatManager
                 {
                     manager.ReloadMissions();
                     manager.ForceMissionCycle();
-                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Nova missão em instantes.");
+                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo reiniciado.");
                 }
             }
             return true;
