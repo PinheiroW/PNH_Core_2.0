@@ -1,5 +1,17 @@
 class PNH_MissionBase
 {
+    // ==========================================
+    // --- NOVAS VARIÁVEIS PNH 2.0 (CONTRATO) ---
+    // ==========================================
+    string m_MissionOwnerID;
+    string m_MissionOwnerName;
+    bool m_MissionAccepted;
+    int m_MissionTier;
+    string m_MissionType; 
+    
+    // ==========================================
+    // --- VARIÁVEIS ORIGINAIS DA MISSÃO ---
+    // ==========================================
     string m_MissionInformant;
     string m_MissionLocation;
     string m_MissionMessage1;
@@ -26,7 +38,38 @@ class PNH_MissionBase
     {
         m_MissionTime = 0;
         m_RewardsSpawned = false;
+        
+        // PNH 2.0: Inicializa o contrato vazio (A aguardar dono)
+        m_MissionOwnerID = "";
+        m_MissionOwnerName = "";
+        m_MissionAccepted = false;
+        m_MissionTier = 1;
+        m_MissionType = "Desconhecida";
     }
+
+    // ==========================================
+    // --- FUNÇÕES DE CONTRATO (PNH 2.0) --------
+    // ==========================================
+    
+    // Regista o jogador como o Dono Oficial desta Missão
+    void AcceptContract(PlayerBase player, int tier, string missionName)
+    {
+        if (!player || !player.GetIdentity()) return;
+        m_MissionOwnerID = player.GetIdentity().GetPlainId();
+        m_MissionOwnerName = player.GetIdentity().GetName();
+        m_MissionAccepted = true;
+        m_MissionTier = tier;
+        m_MissionType = missionName;
+    }
+
+    // Verifica se o jogador que se aproxima é o verdadeiro Dono do Contrato
+    bool IsContractOwner(PlayerBase player)
+    {
+        if (!m_MissionAccepted || !player || !player.GetIdentity()) return false;
+        return (m_MissionOwnerID == player.GetIdentity().GetPlainId());
+    }
+
+    // ==========================================
 
     bool IsExtended() { return false; }
     bool DeployMission() { return true; }
@@ -49,5 +92,10 @@ class PNH_MissionBase
             if (m_MissionAIs[i]) GetGame().ObjectDelete(m_MissionAIs[i]);
         }
         m_MissionAIs.Clear(); // ADIÇÃO PNH 2.0: Limpa o array da memória do servidor
+        
+        // 3. PNH 2.0: Reseta os dados do Contrato na memória
+        m_MissionOwnerID = "";
+        m_MissionOwnerName = "";
+        m_MissionAccepted = false;
     }
 }

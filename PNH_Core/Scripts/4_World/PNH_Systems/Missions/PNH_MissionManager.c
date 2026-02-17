@@ -78,15 +78,25 @@ class PNH_MissionManager
         PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
         string selectedMission = "";
 
-        if (config.MissoesAtivas.Count() == 0)
+        // --- NOVO SISTEMA PNH 2.0: LEITURA DOS TIERS ---
+        array<string> todasAsMissoes = new array<string>;
+        if (config.CatalogoMissoes) {
+            foreach(string m1 : config.CatalogoMissoes.Tier1_Recruta) todasAsMissoes.Insert(m1);
+            foreach(string m2 : config.CatalogoMissoes.Tier2_Mercenario) todasAsMissoes.Insert(m2);
+            foreach(string m3 : config.CatalogoMissoes.Tier3_Especialista) todasAsMissoes.Insert(m3);
+            foreach(string m4 : config.CatalogoMissoes.Tier4_Lenda) todasAsMissoes.Insert(m4);
+        }
+
+        if (todasAsMissoes.Count() == 0)
         {
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma missão ativa no JSON!");
+            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma missão cadastrada nos Tiers do JSON!");
             m_CooldownTimer = 60; 
             return;
         }
 
         if (config.DebugSettings.DebugMission != "") selectedMission = config.DebugSettings.DebugMission;
-        else selectedMission = config.MissoesAtivas.GetRandomElement();
+        else selectedMission = todasAsMissoes.GetRandomElement();
+        // ------------------------------------------------
 
         if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
         else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
@@ -127,7 +137,6 @@ class PNH_MissionManager
         }
         else 
         { 
-            // ALERTA DE COORDENADA INEXISTENTE ADICIONADO AQUI
             PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada encontrada em PNH_EventsWorldData para a missão: " + selectedMission);
             m_ActiveMission = null; 
             m_CooldownTimer = 30; 

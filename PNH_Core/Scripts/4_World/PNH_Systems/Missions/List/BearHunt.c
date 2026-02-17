@@ -1,144 +1,89 @@
+// Local: PNH_Core/Scripts/4_World/PNH_Systems/Missions/Tipos/BearHunt.c
+
 class BearHuntMission extends PNH_MissionBase
 {
-    ItemBase m_RewardChest;
-    ref array<Object> m_TargetAnimals = new array<Object>; 
-    
-    bool m_IsVictory = false; 
+	override bool DeployMission()
+	{
+		// ==========================================================
+		// --- TRAVA DE INICIALIZAÇÃO PNH 2.0 (SEU PLANO ORIGINAL) ---
+		// Se o contrato não foi aceito, o urso NÃO nasce e nada é avisado.
+		if (!m_MissionAccepted) return false; 
+		// ==========================================================
 
-    // Controles de Perímetro e Avisos
-    bool m_ProximityWarned = false; 
-    bool m_InnerProximityWarned = false; 
+		m_MissionInformant = "Ranger Local";
+		m_MissionLocation = m_MissionLocation; 
+		m_MissionMessage1 = "Predador avistado nos arredores de " + m_MissionLocation;
+		m_MissionMessage2 = "Um urso ferido e agressivo está atacando quem passa.";
+		m_MissionMessage3 = "Encontre o animal e neutralize-o antes que haja mais vítimas.";
 
-    ref PNH_MissionData_BearHunt m_Config;
+		m_MissionTimeout = 1800;
+		m_MissionZoneOuterRadius = 300;
+		m_MissionZoneInnerRadius = 20;
 
-    override bool IsExtended() { return false; }
-    
-    void BearHuntMission()
-    {   
-        string caminhoJson = "$profile:PNH/Missions/BearHunt.json";
-        m_Config = new PNH_MissionData_BearHunt();
-        
-        if (FileExist(caminhoJson)) {
-            JsonFileLoader<PNH_MissionData_BearHunt>.JsonLoadFile(caminhoJson, m_Config);
-        }
+		// --- SPAWN DO URSO (Com correção técnica de vetor) ---
+		vector spawnPos = m_MissionPosition + "1.0 0 1.0".ToVector(); 
+		Object bear = GetGame().CreateObjectEx("Animal_UrsusArctos", spawnPos, ECE_PLACE_ON_SURFACE);
+		if (bear) m_MissionAIs.Insert(bear);
 
-        m_MissionTimeout = m_Config.TempoLimiteSegundos;
-        m_MissionZoneOuterRadius = m_Config.RaioAvisoExterno;
-        m_MissionZoneInnerRadius = m_Config.RaioAvisoInterno;
-        
-        if (m_Config.Lore) {
-            m_MissionInformant = m_Config.Lore.Informante;
-            if (m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 2) {
-                m_MissionMessage1 = m_Config.Lore.MensagensRadio[0];
-                m_MissionMessage2 = m_Config.Lore.MensagensRadio[1];
-            }
-        }
-    }
+		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: BearHunt em " + m_MissionLocation);
 
-    override void PlayerChecks(PlayerBase player)
-    {
-        float distance = vector.Distance(player.GetPosition(), m_MissionPosition);
-        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+		return true;
+	}
 
-        // Avisos de Perímetro
-        if (!m_ProximityWarned && distance <= m_MissionZoneOuterRadius)
-        {
-            m_ProximityWarned = true;
-            EnviarAviso(m_MissionInformant, "Atenção Operador, você está entrando na zona de caça do Alpha. Rastros recentes detectados.");
-        }
+	override void PlayerChecks(PlayerBase player)
+	{
+		if (!m_MissionAccepted) return; 
+		if (!IsContractOwner(player)) return; 
 
-        if (!m_InnerProximityWarned && distance <= m_MissionZoneInnerRadius)
-        {
-            m_InnerProximityWarned = true;
-            EnviarAviso(m_MissionInformant, "Atenção! O Espécime Alpha e a sua matilha estão muito próximos! Fogo livre!");
-        }
+		if (!player || !player.IsAlive()) return;
 
-        // VERIFICA SE TODOS OS ANIMAIS DA MATILHA MORRERAM
-        if (!m_IsVictory && m_TargetAnimals.Count() > 0)
-        {
-            bool todosMortos = true;
-            for (int i = 0; i < m_TargetAnimals.Count(); i++)
-            {
-                if (m_TargetAnimals[i] && m_TargetAnimals[i].IsAlive())
-                {
-                    todosMortos = false;
-                    break;
-                }
-            }
+		float distance = vector.Distance(player.GetPosition(), m_MissionPosition);
 
-            if (todosMortos) FinalizarMissao(player);
-        }
-    }
+		if (distance <= m_MissionZoneOuterRadius)
+		{
+			bool bearAlive = false;
+			foreach (Object ai : m_MissionAIs)
+			{
+				if (ai && EntityAI.Cast(ai).IsAlive()) { bearAlive = true; break; }
+			}
 
-    void FinalizarMissao(PlayerBase player)
-    {
-        m_IsVictory = true;
-        string playerName = player.GetIdentity().GetName();
+			if (!bearAlive)
+			{
+				MissionFinal();
+				PNH_MissionManager.GetInstance().EndMission();
+			}
+		}
+	}
 
-        string winMsg = "[PNH_CORE] SUCESSO: [" + playerName + "] caçou a ameaça Alpha na região de " + m_MissionLocation + "!";
-        PNH_Logger.Log("Missões", winMsg);
-        
-        string mensagemFinal = "Ameaça eliminada! Recompensa liberada.";
-        if (m_Config.Lore && m_Config.Lore.MensagemVitoria != "") {
-            mensagemFinal = m_Config.Lore.MensagemVitoria;
-        }
-        
-        EnviarAviso("Comando PNH", mensagemFinal);
-        
-        SpawnRewards(); 
-        
-        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-        m_MissionTimeout = m_MissionTime + config.ConfiguracoesGerais.TempoLimpezaSegundos;
-    }
+	override void MissionFinal()
+	{
+		PNH_Utils.SendMessageToAll("[RÁDIO PNH] A ameaça em " + m_MissionLocation + " foi eliminada por " + m_MissionOwnerName + ".");
+		PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: BearHunt por " + m_MissionOwnerName);
+		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName + " abateu o urso.");
 
-    void SpawnRewards()
-    {
-        if (!m_Config || !m_Config.Recompensas) return;
+		for (int i = 0; i < m_MissionAIs.Count(); i++)
+		{
+			if (m_MissionAIs[i]) GetGame().ObjectDelete(m_MissionAIs[i]);
+		}
 
-        m_RewardChest = ItemBase.Cast(GetGame().CreateObject(m_Config.Recompensas.Container, m_MissionPosition, false, false, false));
-        if (m_RewardChest)
-        {
-            for (int i = 0; i < m_Config.Recompensas.Itens.Count(); i++) {
-                m_RewardChest.GetInventory().CreateInInventory(m_Config.Recompensas.Itens[i]);
-            }
-            m_MissionObjects.Insert(m_RewardChest);
-        }
-    }
+		if (m_MissionAccepted && m_MissionOwnerID != "")
+		{
+			PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(m_MissionOwnerID, m_MissionOwnerName);
+			PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
 
-    void EnviarAviso(string emissor, string msg)
-    {
-        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-        if (config.ConfiguracoesGerais.UsarPDA) GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(emissor, msg), true);
-        else PNH_Utils.SendMessageToAll("[" + emissor + "] " + msg);
-    }
-
-    override bool DeployMission()
-    {
-        if (!m_Config || !m_Config.Ativa) return false;
-
-        if (m_Config.Lore && m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 3) {
-            m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_MissionLocation + " **.";
-        }
-
-        // SPAWN DOS ANIMAIS (MATILHA)
-        if (m_Config.Alvo)
-        {
-            for (int i = 0; i < m_Config.Alvo.Quantidade; i++) 
-            {
-                vector spawnPos = m_MissionPosition;
-                spawnPos[0] = spawnPos[0] + Math.RandomFloat(-10.0, 10.0);
-                spawnPos[2] = spawnPos[2] + Math.RandomFloat(-10.0, 10.0);
-                spawnPos[1] = GetGame().SurfaceY(spawnPos[0], spawnPos[2]);
-
-                Object animal = GetGame().CreateObject(m_Config.Alvo.ClasseAnimal, spawnPos, false, true, true);
-                if (animal) {
-                    m_TargetAnimals.Insert(animal);
-                    m_MissionAIs.Insert(animal); 
-                }
-            }
-        }
-
-        PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_INICIADA: Caçada Alpha em " + m_MissionLocation);
-        return true;
-    }
+			if (pData && settings) 
+			{
+				pData.TemMissaoAtiva = false;
+				pData.ClasseMissaoAtiva = "";
+				PNH_ProfileManager.SaveProfile(pData);
+				
+				int xpGanho = settings.TabelaXP.XP_Tier_2; 
+				PlayerBase dono = PNH_Utils.GetPlayerByName(m_MissionOwnerName);
+				if (dono) {
+					PNH_ProfileManager.AddXP(dono, xpGanho); 
+					PNH_Utils.SendMessage(dono, "CONTRATO CONCLUÍDO: +" + xpGanho + " XP creditados.");
+				}
+			}
+		}
+	}
 }

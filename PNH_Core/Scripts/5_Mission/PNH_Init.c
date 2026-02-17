@@ -28,4 +28,16 @@ modded class MissionServer
             m_PNH_MissionManager.OnUpdate(timeslice);
         }
     }
+
+    // ---> 4. NOVA FUNÇÃO PNH 2.0: GATILHO DE LOGIN <---
+    override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity)
+    {
+        super.InvokeOnConnect(player, identity);
+        
+        // CORREÇÃO: Usando GetPlainId() para pegar o Steam64 (Numérico)
+        if (identity) {
+            PNH_ProfileManager.LoadProfile(identity.GetPlainId(), identity.GetName());
+            Print("[PNH_2.0] Perfil verificado/criado com sucesso para: " + identity.GetName());
+        }
+    }
 }
