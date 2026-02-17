@@ -21,7 +21,7 @@ class HordeMission extends PNH_MissionBase
 			if (npc) m_MissionAIs.Insert(npc);
 		}
 
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Horde em " + m_MissionLocation);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Horde em " + m_MissionLocation);
 		return true;
 	}
 
@@ -42,7 +42,7 @@ class HordeMission extends PNH_MissionBase
 	override void MissionFinal()
 	{
 		PNH_Utils.SendMessageToAll("[RÁDIO PNH] " + m_MissionOwnerName + " desmantelou a horda!");
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName);
 
 		if (m_MissionAccepted && m_MissionOwnerID != "")
 		{

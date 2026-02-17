@@ -18,11 +18,20 @@ class PNH_MissionSettings_Cenario {
     void PNH_MissionSettings_Cenario() { Barricadas = new array<ref PNH_MissionSettings_Barricada>; }
 }
 
-// --- ESTRUTURA PARA POSIÇÕES EXATAS DE ITENS (NOVO) ---
+// --- ESTRUTURA PARA POSIÇÕES EXATAS DE ITENS ---
 class PNH_MissionSettings_ItemPos {
     string Classe;
     string Posicao;
     string Orientacao;
+}
+
+// --- NOVA ESTRUTURA DE ROTAS (Para Missão de Transporte) ---
+class PNH_MissionSettings_Rota {
+    string NomeDestino;
+    string StartPos;
+    vector StartPosVec; // Auxiliar para conversão
+    string EndPos;
+    vector EndPosVec;   // Auxiliar para conversão
 }
 
 // --- ESTRUTURAS ESPECÍFICAS DE RECOMPENSAS ---
@@ -60,15 +69,13 @@ class PNH_MissionSettings_Lore {
     ref array<string> NomesSobreviventes;
     ref array<string> MensagensRadio;
     
-    // Gatilhos de Texto Fase A
     string MensagemAproximacao;       
     string MensagemNoObjetivo;        
     string MensagemVitoria;           
     
-    // Gatilhos de Texto Fases Extras
     string MensagemFaseB;             
-    string MensagemFaseC; // ADICIONADO PARA O TRANSPORTE
-    string MensagemFaseD; // ADICIONADO PARA O TRANSPORTE
+    string MensagemFaseC; 
+    string MensagemFaseD; 
     string MensagemAproximacaoEntrega;
     string MensagemNoObjetivoEntrega; 
 
@@ -97,13 +104,17 @@ class PNH_MissionSettings_Locais {
 
 // --- DADOS ESPECÍFICOS DAS MISSÕES ---
 
-// --- DADOS: MISSÃO TRANSPORTE (OPERAÇÃO PROMETEU - 4 FASES) ---
+// --- DADOS: MISSÃO TRANSPORTE ---
 class PNH_MissionData_Transport {
     bool Ativa;
     float TempoLimiteSegundos;
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
     
-    // --- FASE A: O Veículo (Vybor) ---
+    // Campos necessários para a lógica do Transport.c
+    string ClasseObjeto; 
+    ref array<ref PNH_MissionSettings_Rota> Rotas;
+
+    // Fases originais da Operação Prometeu (Mantidas para compatibilidade futura)
     string CidadeFaseA;
     string ClasseVeiculo;
     string PosicaoVeiculo;
@@ -111,7 +122,6 @@ class PNH_MissionData_Transport {
     ref array<ref PNH_MissionSettings_ItemPos> PecasVeiculo;
     int ZumbisFaseA;
     
-    // --- FASE B: A Coleta (Skalisty) ---
     string CidadeFaseB;
     string PosicaoGalpaoFaseB; 
     string ClasseMaleta;
@@ -124,7 +134,6 @@ class PNH_MissionData_Transport {
     string OrientacaoFerramenta;
     int ZumbisFaseB;
     
-    // --- FASE C: A Emboscada (Krasno) ---
     string CidadeFaseC;
     string ClasseCorpo;
     string PosicaoCorpo;
@@ -136,7 +145,6 @@ class PNH_MissionData_Transport {
     string OrientacaoLivroBiblia;
     int ZumbisFaseC;
     
-    // --- FASE D: A Entrega (Altar) ---
     string CidadeFaseD;
     string ClasseNPC;
     string PosicaoNPC;
@@ -149,7 +157,8 @@ class PNH_MissionData_Transport {
     ref PNH_MissionSettings_RecompensasHorda Recompensas;
     
     void PNH_MissionData_Transport() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
+        Rotas = new array<ref PNH_MissionSettings_Rota>; // Inicialização obrigatória
         PecasVeiculo = new array<ref PNH_MissionSettings_ItemPos>;
         PosicoesMaletas = new array<ref PNH_MissionSettings_ItemPos>;
         RoupasNPC = new array<string>;
@@ -164,14 +173,14 @@ class PNH_MissionData_Graveyard {
     float TempoLimiteSegundos;
     float RaioAvisoExterno; 
     float RaioAvisoInterno; 
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
     
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
     ref PNH_MissionSettings_RecompensasHorda Recompensas; 
     
     void PNH_MissionData_Graveyard() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
@@ -183,7 +192,7 @@ class PNH_MissionData_CityStore {
     float TempoLimiteSegundos;
     float RaioAvisoExterno; 
     float RaioAvisoInterno; 
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
     
     string ItemCientifico;  
     int QtdItemCientifico;  
@@ -205,7 +214,7 @@ class PNH_MissionData_CityStore {
     ref PNH_MissionSettings_Dificuldade Dificuldade;
     
     void PNH_MissionData_CityStore() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Recompensas = new PNH_MissionSettings_RecompensasHorda();
         RoupaNPC = new array<string>;
@@ -219,14 +228,14 @@ class PNH_MissionData_BearHunt {
     float TempoLimiteSegundos;
     float RaioAvisoExterno;
     float RaioAvisoInterno;
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Alvo Alvo;
     ref PNH_MissionSettings_RecompensasSimples Recompensas;
 
     void PNH_MissionData_BearHunt() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Alvo = new PNH_MissionSettings_Alvo();
         Recompensas = new PNH_MissionSettings_RecompensasSimples();
@@ -238,9 +247,8 @@ class PNH_MissionData_Apartment {
     float TempoLimiteSegundos;
     float RaioAvisoExterno;
     float RaioAvisoInterno;
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
     
-    // --- Configurações Fase A (Prédio) ---
     string PosicaoRecompensaLocal; 
     string ClasseCorpo;
     string PosicaoCorpoLocal;
@@ -252,14 +260,12 @@ class PNH_MissionData_Apartment {
     string PosicaoZumbiAssassinoLocal;
     ref array<string> SpawnsZumbisInternos;
 
-    // --- Configurações Fase B (Entrega do Livro) ---
     string ItemMissao;
     string PosicaoEntrega;
     string CidadeEntrega;
     string ClasseNPCEntrega;
     ref array<string> RoupasNPCEntrega;
     
-    // NOVOS CAMPOS PARA O BARRIL DA FASE B
     string PosicaoBarrilEntrega;
     string OrientacaoBarrilEntrega;
 
@@ -269,7 +275,7 @@ class PNH_MissionData_Apartment {
     ref PNH_MissionSettings_Cenario Cenario;
 
     void PNH_MissionData_Apartment() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         RecompensasHorda = new PNH_MissionSettings_RecompensasHorda();
@@ -288,7 +294,7 @@ class PNH_MissionData_PlaneCrash {
     float RaioAvisoExterno;
     float RaioAvisoInterno;
     string ObjetoCentral;
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -296,7 +302,7 @@ class PNH_MissionData_PlaneCrash {
     ref PNH_MissionSettings_RecompensasHorda Recompensas; 
 
     void PNH_MissionData_PlaneCrash() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         Locais = new PNH_MissionSettings_Locais();
@@ -309,7 +315,7 @@ class PNH_MissionData_Horde {
     float TempoLimiteSegundos;
     float RaioAvisoExterno;
     float RaioAvisoInterno;
-    ref PNH_MissionSettings_ContratoInfo Contrato; // NOVO: PNH 2.0
+    ref PNH_MissionSettings_ContratoInfo Contrato;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
@@ -317,7 +323,7 @@ class PNH_MissionData_Horde {
     ref PNH_MissionSettings_RecompensasHorda RecompensasHorda;
 
     void PNH_MissionData_Horde() {
-        Contrato = new PNH_MissionSettings_ContratoInfo(); // NOVO: PNH 2.0
+        Contrato = new PNH_MissionSettings_ContratoInfo();
         Lore = new PNH_MissionSettings_Lore();
         Dificuldade = new PNH_MissionSettings_Dificuldade();
         Piloto = new PNH_MissionSettings_Piloto();

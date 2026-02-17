@@ -25,7 +25,7 @@ class BearHuntMission extends PNH_MissionBase
 		Object bear = GetGame().CreateObjectEx("Animal_UrsusArctos", spawnPos, ECE_PLACE_ON_SURFACE);
 		if (bear) m_MissionAIs.Insert(bear);
 
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: BearHunt em " + m_MissionLocation);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: BearHunt em " + m_MissionLocation);
 
 		return true;
 	}
@@ -59,7 +59,7 @@ class BearHuntMission extends PNH_MissionBase
 	{
 		PNH_Utils.SendMessageToAll("[RÁDIO PNH] A ameaça em " + m_MissionLocation + " foi eliminada por " + m_MissionOwnerName + ".");
 		PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: BearHunt por " + m_MissionOwnerName);
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName + " abateu o urso.");
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName + " abateu o urso.");
 
 		for (int i = 0; i < m_MissionAIs.Count(); i++)
 		{

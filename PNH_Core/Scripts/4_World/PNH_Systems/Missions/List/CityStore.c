@@ -21,7 +21,7 @@ class CityStoreMission extends PNH_MissionBase
 			if (looter) m_MissionAIs.Insert(looter);
 		}
 
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: CityStore em " + m_MissionLocation);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: CityStore em " + m_MissionLocation);
 		return true;
 	}
 
@@ -41,7 +41,7 @@ class CityStoreMission extends PNH_MissionBase
 	override void MissionFinal()
 	{
 		PNH_Utils.SendMessageToAll("[RÁDIO PNH] A loja em " + m_MissionLocation + " foi recuperada por " + m_MissionOwnerName + ".");
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName);
 
 		if (m_MissionAccepted && m_MissionOwnerID != "")
 		{

@@ -24,7 +24,7 @@ class PlaneCrashMission extends PNH_MissionBase
 			if (guard) m_MissionAIs.Insert(guard);
 		}
 
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: PlaneCrash em " + m_MissionLocation);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: PlaneCrash em " + m_MissionLocation);
 		return true;
 	}
 

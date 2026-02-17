@@ -21,7 +21,7 @@ class TransportMission extends PNH_MissionBase
         Object transportObj = GetGame().CreateObjectEx(config.ClasseObjeto, m_MissionPosition + "2 0 2".ToVector(), ECE_PLACE_ON_SURFACE); // CORREÇÃO VETOR
         if (transportObj) m_MissionObjects.Insert(transportObj);
 
-        PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Transport para " + rota.NomeDestino);
+        PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Transport para " + rota.NomeDestino);
         return true;
     }
 

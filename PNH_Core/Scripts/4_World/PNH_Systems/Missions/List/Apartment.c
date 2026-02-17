@@ -28,7 +28,7 @@ class ApartmentMission extends PNH_MissionBase
 		if (zumbie) m_MissionAIs.Insert(zumbie);
 
 		// Integração Discord (Só dispara se a missão for realmente aceita)
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Apartment em " + m_MissionLocation);
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Apartment em " + m_MissionLocation);
 
 		return true;
 	}
@@ -56,7 +56,7 @@ class ApartmentMission extends PNH_MissionBase
 		PNH_Utils.SendMessageToAll("[RÁDIO PNH] Os apartamentos em " + m_MissionLocation + " foram limpos por " + m_MissionOwnerName + ".");
 		PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: Apartment por " + m_MissionOwnerName);
 		
-		PNH_DiscordWebhook.SendMissionMessage("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName + " limpou os apartamentos.");
+		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName + " limpou os apartamentos.");
 
 		for (int i = 0; i < m_MissionAIs.Count(); i++)
 		{
