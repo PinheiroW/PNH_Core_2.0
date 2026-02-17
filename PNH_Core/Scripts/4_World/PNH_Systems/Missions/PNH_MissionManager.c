@@ -1,7 +1,6 @@
 class PNH_MissionManager
 {
     static PNH_MissionManager m_Instance;
-
     ref PNH_MissionBase m_ActiveMission;
     float m_UpdateTimer;
     int m_MissionState;     
@@ -23,6 +22,7 @@ class PNH_MissionManager
 
     static PNH_MissionManager GetInstance() { return m_Instance; }
 
+    // --- FUNÇÕES PARA COMANDOS DE ADMIN (RELOAD) ---
     void ReloadMissions()
     {
         PNH_MissionSettings.Load();
@@ -37,8 +37,28 @@ class PNH_MissionManager
             m_ActiveMission = null;
         }
         m_MissionState = 0;
-        m_CooldownTimer = 60;
-        PNH_Logger.Log("Missões", "[PNH_CORE] Ciclo de missões resetado por Admin. Nova missão em 60s.");
+        m_CooldownTimer = 10; // Reinicia em 10 segundos
+        PNH_Logger.Log("Missões", "[PNH_CORE] Ciclo de missões resetado por Admin.");
+    }
+
+    // --- SPAWN DE NPCs FIXOS ---
+    void SpawnNPCs()
+    {
+        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
+        if (!config || config.NPCsQuestGivers.Count() == 0) return;
+
+        foreach (PNH_MissionSettings_NPC npcData : config.NPCsQuestGivers)
+        {
+            PlayerBase npc = PlayerBase.Cast(GetGame().CreateObject("SurvivorM_Mirek", npcData.Posicao.ToVector(), false, false, true));
+            if (npc)
+            {
+                npc.SetPosition(npcData.Posicao.ToVector());
+                npc.SetOrientation(npcData.Orientacao.ToVector());
+                foreach (string item : npcData.Roupas) { npc.GetInventory().CreateInInventory(item); }
+                npc.SetAllowDamage(false);
+                if (npc.GetBrain()) npc.GetBrain().Stop();
+            }
+        }
     }
 
     void OnUpdate(float timeslice)
@@ -54,19 +74,19 @@ class PNH_MissionManager
             }
             else if (m_MissionState == 1 && m_ActiveMission)
             {
-                m_ActiveMission.m_MissionTime += 2;
-                if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) 
+                if (m_ActiveMission.m_MissionAccepted)
                 {
-                    EndMission();
-                }
-                else
-                {
-                    array<Man> players = new array<Man>;
-                    GetGame().GetPlayers(players);
-                    for (int i = 0; i < players.Count(); i++)
+                    m_ActiveMission.m_MissionTime += 2;
+                    if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) EndMission();
+                    else
                     {
-                        PlayerBase p = PlayerBase.Cast(players.Get(i));
-                        if (p) m_ActiveMission.PlayerChecks(p);
+                        array<Man> players = new array<Man>;
+                        GetGame().GetPlayers(players);
+                        for (int i = 0; i < players.Count(); i++)
+                        {
+                            PlayerBase p = PlayerBase.Cast(players.Get(i));
+                            if (p) m_ActiveMission.PlayerChecks(p);
+                        }
                     }
                 }
             }
@@ -76,9 +96,6 @@ class PNH_MissionManager
     void StartRandomMission()
     {
         PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-        string selectedMission = "";
-
-        // --- NOVO SISTEMA PNH 2.0: LEITURA DOS TIERS ---
         array<string> todasAsMissoes = new array<string>;
         if (config.CatalogoMissoes) {
             foreach(string m1 : config.CatalogoMissoes.Tier1_Recruta) todasAsMissoes.Insert(m1);
@@ -87,17 +104,9 @@ class PNH_MissionManager
             foreach(string m4 : config.CatalogoMissoes.Tier4_Lenda) todasAsMissoes.Insert(m4);
         }
 
-        if (todasAsMissoes.Count() == 0)
-        {
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma missão cadastrada nos Tiers do JSON!");
-            m_CooldownTimer = 60; 
-            return;
-        }
+        if (todasAsMissoes.Count() == 0) { m_CooldownTimer = 60; return; }
 
-        if (config.DebugSettings.DebugMission != "") selectedMission = config.DebugSettings.DebugMission;
-        else selectedMission = todasAsMissoes.GetRandomElement();
-        // ------------------------------------------------
-
+        string selectedMission = todasAsMissoes.GetRandomElement();
         if (selectedMission == "Apartment") m_ActiveMission = new ApartmentMission();
         else if (selectedMission == "BearHunt") m_ActiveMission = new BearHuntMission();
         else if (selectedMission == "Horde") m_ActiveMission = new HordeMission();
@@ -105,100 +114,32 @@ class PNH_MissionManager
         else if (selectedMission == "Transport") m_ActiveMission = new TransportMission();
         else if (selectedMission == "Graveyard") m_ActiveMission = new GraveyardMission();
         else if (selectedMission == "CityStore") m_ActiveMission = new CityStoreMission();
-        else 
-        {
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Missão desconhecida: " + selectedMission);
-            m_CooldownTimer = 30;
-            return;
-        }
+
+        if (!m_ActiveMission) return;
 
         PNH_EventsWorldData.Init(); 
-        array<int> validIndexes = new array<int>;
+        int selectedIdx = -1;
         for (int i = 0; i < PNH_EventsWorldData.MissionEvents.Count(); i++)
         {
-            if (PNH_EventsWorldData.MissionEvents.Get(i).IndexOf(selectedMission) == 0) 
-                validIndexes.Insert(i);
-        }
-
-        if (validIndexes.Count() > 0)
-        {
-            int selectedIdx = validIndexes.GetRandomElement();
-            string eventInfo = PNH_EventsWorldData.MissionEvents.Get(selectedIdx);
-            m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(selectedIdx);
-            
-            TStringArray eventParts = new TStringArray;
-            eventInfo.Split(" ", eventParts);
-            if (eventParts.Count() >= 2)
-            {
-                string cityName = eventParts.Get(1);
-                cityName.Replace("_", " "); 
-                m_ActiveMission.m_MissionLocation = cityName;
+            if (PNH_EventsWorldData.MissionEvents.Get(i).IndexOf(selectedMission) == 0) {
+                selectedIdx = i; break;
             }
         }
-        else 
-        { 
-            PNH_Logger.Log("Missões", "[PNH_CORE] ERRO: Nenhuma coordenada encontrada em PNH_EventsWorldData para a missão: " + selectedMission);
-            m_ActiveMission = null; 
-            m_CooldownTimer = 30; 
-            return; 
-        }
 
-        if (m_ActiveMission.DeployMission())
-        {
-            m_MissionState = 1;
+        if (selectedIdx != -1) m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(selectedIdx);
+        else { m_ActiveMission = null; m_CooldownTimer = 30; return; }
 
-            string posStr = m_ActiveMission.m_MissionPosition.ToString();
-            string logDiscord = "[PNH_CORE] MISSÃO_INICIADA: " + selectedMission + " em " + m_ActiveMission.m_MissionLocation + " | Coordenadas: " + posStr;
-            
-            Print("[PNH SYSTEM] " + logDiscord); 
-            PNH_Logger.Log("Missões", logDiscord); 
+        m_MissionState = 1;
+        string npcLocal = "Green Mountain";
+        if (m_ActiveMission.m_MissionTier >= 3) npcLocal = "Radio Zenit";
 
-            if (config.ConfiguracoesGerais.UsarPDA) 
-            {
-                GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>("Comando PNH", "[ALERTA] Novo contrato disponível. Verifique o seu PDA."), true);
-            }
-            else 
-            {
-                PNH_Utils.SendMessageToAll("[RADIO PNH] Alguém na escuta? Recebemos um sinal!");
-            }
-            
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendMissionStory, 4000, false);
-        }
-        else
-        {
-            m_ActiveMission = null;
-            m_CooldownTimer = 10;
-        }
-    }
-
-    void SendMissionStory()
-    {
-        if (m_ActiveMission)
-        {
-            PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-            if (config.ConfiguracoesGerais.UsarPDA)
-            {
-                GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(m_ActiveMission.m_MissionInformant, m_ActiveMission.m_MissionMessage1), true);
-                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendExtraPDAMessage, 3000, false, m_ActiveMission.m_MissionMessage2);
-                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendExtraPDAMessage, 6000, false, m_ActiveMission.m_MissionMessage3);
-                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendExtraPDAMessage, 9000, false, m_ActiveMission.m_MissionMessage4);
-                GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.SendExtraPDAMessage, 12000, false, m_ActiveMission.m_MissionMessage5);
-            }
-            else PNH_Utils.SendMessageToAll("[" + m_ActiveMission.m_MissionInformant + "] " + m_ActiveMission.m_MissionMessage1);
-        }
-    }
-
-    void SendExtraPDAMessage(string message)
-    {
-        if (m_ActiveMission && message != "")
-            GetRPCManager().SendRPC("[GearPDA] ", "SendGlobalMessage", new Param2<string, string>(m_ActiveMission.m_MissionInformant, message), true);
+        PNH_Utils.SendMessageToAll("[ALERTA PNH] Nova operação disponível em " + npcLocal + ". Vá até o local para assinar o contrato!");
     }
 
     void EndMission()
     {
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
-        m_ActiveMission = null; 
-        m_MissionState = 0;
+        m_ActiveMission = null; m_MissionState = 0;
         m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60; 
     }
 }
