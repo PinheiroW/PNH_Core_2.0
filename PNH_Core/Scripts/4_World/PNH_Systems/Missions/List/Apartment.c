@@ -3,7 +3,6 @@ class ApartmentMission extends PNH_MissionBase
     ItemBase m_RewardContainer;
     Object m_SurvivorNPC;
     Object m_NPCEntrega;
-    ItemBase m_MissionItem; // O Livro
     
     bool m_IsVictory = false;
     bool m_Deployed = false; 
@@ -19,7 +18,7 @@ class ApartmentMission extends PNH_MissionBase
 
     ref PNH_MissionData_Apartment m_Config;
 
-    override bool IsExtended() { return true; } // Agora é true por ter duas fases
+    override bool IsExtended() { return true; } 
 
     void ApartmentMission()
     {
@@ -45,9 +44,37 @@ class ApartmentMission extends PNH_MissionBase
         }
     }
 
+    // =========================================================
+    // FUNÇÃO ROBUSTA DE BUSCA (Verifica Mãos e Bolsos Profundos)
+    // =========================================================
+    EntityAI ProcurarItemNoJogador(PlayerBase player, string itemClass)
+    {
+        if (!player || itemClass == "") return null;
+
+        // 1. Verifica primeiro nas Mãos
+        EntityAI itemMaos = player.GetHumanInventory().GetEntityInHands();
+        if (itemMaos && itemMaos.GetType() == itemClass) return itemMaos;
+
+        // 2. Faz um Raio-X a todo o inventário (mochilas, calças, casacos)
+        array<EntityAI> itemsArray = new array<EntityAI>;
+        player.GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, itemsArray);
+        
+        for (int i = 0; i < itemsArray.Count(); i++)
+        {
+            if (itemsArray[i] && itemsArray[i].GetType() == itemClass)
+            {
+                return itemsArray[i];
+            }
+        }
+        return null;
+    }
+
     override void PlayerChecks(PlayerBase player)
     {
         vector playerPos = player.GetPosition();
+        
+        // Usa a nova função para saber se o jogador está com o livro
+        EntityAI livroNoJogador = ProcurarItemNoJogador(player, m_Config.ItemMissao);
 
         // --- FASE A: BUSCA PELO LIVRO NO PRÉDIO ---
         if (!m_PhaseB_Active)
@@ -64,13 +91,12 @@ class ApartmentMission extends PNH_MissionBase
                 EnviarAviso(m_MissionInformant, m_Config.Lore.MensagemNoObjetivo);
             }
 
-            // GATILHO: Jogador pegou o livro do NPC morto
-            if (m_MissionItem && player.GetInventory().HasEntityInInventory(m_MissionItem))
+            // GATILHO: Jogador pegou o livro
+            if (livroNoJogador)
             {
                 m_PhaseB_Active = true;
                 string msgB = m_Config.Lore.MensagemFaseB + m_Config.CidadeEntrega + ".";
                 EnviarAviso(m_MissionInformant, msgB);
-                
                 PNH_Logger.Log("Missões", "[PNH_CORE] FASE B INICIADA: Transporte do livro para " + m_Config.CidadeEntrega);
             }
         }
@@ -84,26 +110,24 @@ class ApartmentMission extends PNH_MissionBase
                 EnviarAviso(m_MissionInformant, m_Config.Lore.MensagemAproximacaoEntrega);
             }
 
-            if (!m_B_InnerWarned && distB <= 15.0) { // 15 metros para segurança do gatilho
+            if (!m_B_InnerWarned && distB <= 15.0) { 
                 m_B_InnerWarned = true;
                 EnviarAviso(m_MissionInformant, m_Config.Lore.MensagemNoObjetivoEntrega);
             }
 
-            // GATILHO DE ENTREGA: Perto do Boris + Com o Livro
-            if (!m_ExchangeDone && distB <= 3.0 && m_MissionItem && player.GetInventory().HasEntityInInventory(m_MissionItem))
+            // GATILHO DE ENTREGA: Distância aumentada para 5 metros para evitar bugs de colisão
+            if (!m_ExchangeDone && distB <= 5.0 && livroNoJogador)
             {
                 m_ExchangeDone = true;
                 
-                // Remove (apaga) o livro do inventário do jogador
-                GetGame().ObjectDelete(m_MissionItem);
+                // DELETA O LIVRO DO INVENTÁRIO
+                GetGame().ObjectDelete(livroNoJogador);
                 
-                // Faz nascer o barril ao lado do Boris
                 SpawnRewards(m_NPCEntrega.GetPosition());
-                
-                EnviarAviso("Comando PNH", "Livro validado e entregue. O seu barril surgiu!");
+                EnviarAviso("Comando PNH", "Livro validado e entregue. O seu barril de pagamento surgiu!");
             }
 
-            // VITÓRIA: Abrir o barril
+            // VITÓRIA
             if (m_ExchangeDone && !m_IsVictory && m_RewardContainer && m_RewardContainer.IsOpen())
             {
                 FinalizarMissao(player);
@@ -114,10 +138,8 @@ class ApartmentMission extends PNH_MissionBase
     void FinalizarMissao(PlayerBase player)
     {
         m_IsVictory = true;
-        PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName() + " finalizou a transação em Green Mountain.");
-        
+        PNH_Logger.Log("Missões", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + player.GetIdentity().GetName() + " em Green Mountain.");
         EnviarAviso("Comando PNH", m_Config.Lore.MensagemVitoria);
-        
         PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
         m_MissionTimeout = m_MissionTime + config.ConfiguracoesGerais.TempoLimpezaSegundos;
     }
@@ -130,7 +152,6 @@ class ApartmentMission extends PNH_MissionBase
         if (m_Config.Lore && m_Config.Lore.MensagensRadio && m_Config.Lore.MensagensRadio.Count() >= 3)
             m_MissionMessage3 = m_Config.Lore.MensagensRadio[2] + "** " + m_MissionLocation + " **.";
 
-        // --- SPAWN DA FASE A (PRÉDIO) ---
         Object missionBuilding = null;
         GetGame().GetObjectsAtPosition(m_MissionPosition, 30.0, m_ObjectList, m_ObjectCargoList);
         for (int b = 0; b < m_ObjectList.Count(); b++) {
@@ -166,8 +187,8 @@ class ApartmentMission extends PNH_MissionBase
                 for (int r = 0; r < m_Config.RoupasNPC.Count(); r++) ent.GetInventory().CreateInInventory(m_Config.RoupasNPC[r]);
                 for (int it = 0; it < m_Config.InventarioNPC.Count(); it++) ent.GetInventory().CreateInInventory(m_Config.InventarioNPC[it]);
                 
-                // SPAWNA O LIVRO E GUARDA A REFERÊNCIA
-                m_MissionItem = ItemBase.Cast(ent.GetInventory().CreateInInventory(m_Config.ItemMissao));
+                // CRIA O LIVRO NO INVENTÁRIO DO NPC
+                ent.GetInventory().CreateInInventory(m_Config.ItemMissao);
                 
                 ent.SetHealth("", "", 10); 
                 m_MissionObjects.Insert(m_SurvivorNPC);
@@ -184,7 +205,7 @@ class ApartmentMission extends PNH_MissionBase
 
         // --- SPAWN DA FASE B (BORIS EM GREEN MOUNTAIN) ---
         vector deliveryPos = m_Config.PosicaoEntrega.ToVector();
-        deliveryPos[1] = GetGame().SurfaceY(deliveryPos[0], deliveryPos[2]); // Ajusta altura ao solo
+        deliveryPos[1] = GetGame().SurfaceY(deliveryPos[0], deliveryPos[2]);
         m_NPCEntrega = GetGame().CreateObject(m_Config.ClasseNPCEntrega, deliveryPos, false, false, true);
         if (m_NPCEntrega) {
             EntityAI npcBoris = EntityAI.Cast(m_NPCEntrega);
@@ -195,13 +216,12 @@ class ApartmentMission extends PNH_MissionBase
             m_MissionObjects.Insert(m_NPCEntrega);
         }
 
-        PNH_Logger.Log("Missões", "[PNH SYSTEM] MISSÃO_INICIADA: Eliminação e Recuperação de " + m_SurvivorName);
+        PNH_Logger.Log("Missões", "[PNH SYSTEM] MISSÃO_INICIADA: Eliminação e Recuperação");
         return true;
     }
 
     void SpawnRewards(vector pos)
     {
-        // O barril nasce ao lado de Boris (Fase B)
         vector rPos = pos + "1.5 0 1.5";
         rPos[1] = GetGame().SurfaceY(rPos[0], rPos[2]);
         

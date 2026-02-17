@@ -36,13 +36,18 @@ class PNH_MissionBase
     void CleanUp()
     {
         int i;
+        // 1. Apaga todos os objetos físicos da missão
         for (i = 0; i < m_MissionObjects.Count(); i++)
         {
             if (m_MissionObjects[i]) GetGame().ObjectDelete(m_MissionObjects[i]);
         }
+        m_MissionObjects.Clear(); // ADIÇÃO PNH 2.0: Limpa o array da memória do servidor
+
+        // 2. Apaga todos os zumbis e NPCs da missão
         for (i = 0; i < m_MissionAIs.Count(); i++)
         {
             if (m_MissionAIs[i]) GetGame().ObjectDelete(m_MissionAIs[i]);
         }
+        m_MissionAIs.Clear(); // ADIÇÃO PNH 2.0: Limpa o array da memória do servidor
     }
 }

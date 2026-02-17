@@ -10,6 +10,13 @@ class PNH_MissionSettings_Cenario {
     void PNH_MissionSettings_Cenario() { Barricadas = new array<ref PNH_MissionSettings_Barricada>; }
 }
 
+// --- ESTRUTURA PARA POSIÇÕES EXATAS DE ITENS (NOVO) ---
+class PNH_MissionSettings_ItemPos {
+    string Classe;
+    string Posicao;
+    string Orientacao;
+}
+
 // --- ESTRUTURAS ESPECÍFICAS DE RECOMPENSAS ---
 class PNH_MissionSettings_Loadout {
     ref array<string> Itens;
@@ -50,8 +57,10 @@ class PNH_MissionSettings_Lore {
     string MensagemNoObjetivo;        
     string MensagemVitoria;           
     
-    // Gatilhos de Texto Fase B (Entrega)
+    // Gatilhos de Texto Fases Extras
     string MensagemFaseB;             
+    string MensagemFaseC; // ADICIONADO PARA O TRANSPORTE
+    string MensagemFaseD; // ADICIONADO PARA O TRANSPORTE
     string MensagemAproximacaoEntrega;
     string MensagemNoObjetivoEntrega; 
 
@@ -80,32 +89,63 @@ class PNH_MissionSettings_Locais {
 
 // --- DADOS ESPECÍFICOS DAS MISSÕES ---
 
+// --- DADOS: MISSÃO TRANSPORTE (OPERAÇÃO PROMETEU - 4 FASES) ---
 class PNH_MissionData_Transport {
     bool Ativa;
     float TempoLimiteSegundos;
-    float RaioAvisoExterno;
-    float RaioAvisoInterno;
     
-    string ClasseVeiculo; 
-    string ItemCarga;     
-    int QuantidadeCargaNecessaria;
+    // --- FASE A: O Veículo (Vybor) ---
+    string CidadeFaseA;
+    string ClasseVeiculo;
+    string PosicaoVeiculo;
+    string OrientacaoVeiculo;
+    ref array<ref PNH_MissionSettings_ItemPos> PecasVeiculo;
+    int ZumbisFaseA;
     
-    string PosicaoEntrega; 
-    string CidadeEntrega;  
+    // --- FASE B: A Coleta (Skalisty) ---
+    string CidadeFaseB;
+    string PosicaoGalpaoFaseB; 
+    string ClasseMaleta;
+    ref array<ref PNH_MissionSettings_ItemPos> PosicoesMaletas;
+    string ClasseLivroArteDaGuerra;
+    string PosicaoLivroArteDaGuerra;
+    string OrientacaoLivroArteDaGuerra;
+    string ClasseFerramenta;
+    string PosicaoFerramenta;
+    string OrientacaoFerramenta;
+    int ZumbisFaseB;
     
-    string ClasseNPCColeta;
-    ref array<string> RoupasNPCColeta;
-    string ClasseNPCEntrega;
-    ref array<string> RoupasNPCEntrega;
+    // --- FASE C: A Emboscada (Krasno) ---
+    string CidadeFaseC;
+    string ClasseCorpo;
+    string PosicaoCorpo;
+    string OrientacaoCorpo;
+    string ClasseZumbiAssassino;
+    string PosicaoZumbiAssassino;
+    string ClasseLivroBiblia;
+    string PosicaoLivroBiblia;
+    string OrientacaoLivroBiblia;
+    int ZumbisFaseC;
+    
+    // --- FASE D: A Entrega (Altar) ---
+    string CidadeFaseD;
+    string ClasseNPC;
+    string PosicaoNPC;
+    string OrientacaoNPC;
+    ref array<string> RoupasNPC;
+    string PosicaoBarril;
     
     ref PNH_MissionSettings_Lore Lore;
-    ref PNH_MissionSettings_RecompensasSimples Recompensas;
+    ref PNH_MissionSettings_Dificuldade Dificuldade;
+    ref PNH_MissionSettings_RecompensasHorda Recompensas;
     
     void PNH_MissionData_Transport() {
+        PecasVeiculo = new array<ref PNH_MissionSettings_ItemPos>;
+        PosicoesMaletas = new array<ref PNH_MissionSettings_ItemPos>;
+        RoupasNPC = new array<string>;
         Lore = new PNH_MissionSettings_Lore();
-        Recompensas = new PNH_MissionSettings_RecompensasSimples();
-        RoupasNPCColeta = new array<string>;
-        RoupasNPCEntrega = new array<string>;
+        Dificuldade = new PNH_MissionSettings_Dificuldade();
+        Recompensas = new PNH_MissionSettings_RecompensasHorda();
     }
 }
 
@@ -201,6 +241,10 @@ class PNH_MissionData_Apartment {
     string CidadeEntrega;
     string ClasseNPCEntrega;
     ref array<string> RoupasNPCEntrega;
+    
+    // NOVOS CAMPOS PARA O BARRIL DA FASE B
+    string PosicaoBarrilEntrega;
+    string OrientacaoBarrilEntrega;
 
     ref PNH_MissionSettings_Lore Lore;
     ref PNH_MissionSettings_Dificuldade Dificuldade;
