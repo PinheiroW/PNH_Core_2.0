@@ -11,6 +11,7 @@ class PNH_DebugSettings {
 class PNH_ConfiguracoesGerais {
     int TempoEntreMissoesMinutos;
     int TempoLimpezaSegundos;
+    int MaxItensNoBarril; // NOVO: Quantidade limite de itens a sortear para o barril
     bool UsarPDA;
     bool ModoRP;
 }

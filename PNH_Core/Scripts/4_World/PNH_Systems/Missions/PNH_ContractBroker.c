@@ -61,11 +61,17 @@ class PNH_ContractBroker
             bManager.SendToPlayer(player, settings.Textos.Sucesso_Assinatura);
             
             vector pos = manager.m_ActiveMission.m_MissionPosition;
-            string strCoords = "X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString();
+            
+            // CORREÇÃO PARA O DISCORD: Adicionamos os parênteses retos aqui
+            string strCoords = "[X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString() + "]";
+
+            // NOVO: Formatação exata para o Webhook do Discord
+            string discordMsg = "Jogador " + pName + " aceitou o contrato " + missionType + " em " + manager.m_ActiveMission.m_MissionLocation + " " + strCoords + ". (ID: " + plainId + ")";
 
             bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, strCoords, manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionOwnerID);
             
-            PNH_AuditManager.LogMissionEvent(manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionType, "Contrato Assinado em [" + strCoords + "]");
+            // Dispara a mensagem formatada para o log/Discord
+            PNH_AuditManager.LogMissionEvent("SISTEMA DE MISSÕES PNH", "", discordMsg);
             
             bManager.DeliverMissionBriefing(manager.m_ActiveMission.m_MissionInformant, manager.m_ActiveMission.m_MissionMessages);
         }

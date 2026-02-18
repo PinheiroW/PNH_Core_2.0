@@ -19,7 +19,7 @@ class PNH_LogisticsManager
         return null;
     }
 
-    // --- BARRIL COM LOOT EXCLUSIVO E PORCENTAGEM ---
+    // --- BARRIL COM LIMITE MÁXIMO (SORTEIO INTELIGENTE) ---
     static Object SpawnRewardContainer(string type, vector pos)
     {
         EntityAI container = EntityAI.Cast(GetGame().CreateObject(type, pos, false, true, true));
@@ -47,34 +47,51 @@ class PNH_LogisticsManager
                     default: listaAtiva = settings.Loot_Tier1; break;
                 }
 
-                // Se houver itens na lista, rola os dados (RNG) para cada um
                 if (listaAtiva && listaAtiva.Count() > 0)
                 {
+                    // Pega o limite do JSON
+                    int maxItens = settings.ConfiguracoesGerais.MaxItensNoBarril;
+                    if (maxItens <= 0) maxItens = 5; // Proteção caso o JSON não tenha a variável preenchida ou esteja a 0
+
                     int itensGerados = 0;
-                    foreach (PNH_LootItem loot : listaAtiva)
+                    int tentativas = 0; // Evita loop infinito se os itens tiverem 0% de chance
+
+                    // Fica a sortear itens até encher a quantidade estipulada no JSON
+                    while (itensGerados < maxItens && tentativas < 200)
                     {
-                        int sorteio = Math.RandomIntInclusive(1, 100); // Rola de 1 a 100
+                        tentativas++;
                         
-                        // Se o número sorteado for menor ou igual à chance, o item spawna
+                        // 1. Escolhe um item da lista aleatoriamente
+                        int index = Math.RandomInt(0, listaAtiva.Count());
+                        PNH_LootItem loot = listaAtiva.Get(index);
+                        
+                        // 2. Rola a probabilidade desse item (ex: 15% para a SKS)
+                        int sorteio = Math.RandomIntInclusive(1, 100);
+                        
+                        // 3. Se o número sorteado for menor ou igual à chance, o item spawna
                         if (sorteio <= loot.Chance)
                         {
-                            // Proteção: se a quantidade estiver a 0 no JSON, assume 1
                             int qtd = loot.Quantidade;
-                            if (qtd <= 0) qtd = 1; 
+                            if (qtd <= 0) qtd = 1;
 
+                            // Adiciona a quantidade ao barril, respeitando o limite máximo definido
                             for (int i = 0; i < qtd; i++)
                             {
-                                container.GetInventory().CreateInInventory(loot.Item);
-                                itensGerados++;
+                                if (itensGerados < maxItens) 
+                                {
+                                    container.GetInventory().CreateInInventory(loot.Item);
+                                    itensGerados++;
+                                }
                             }
                         }
                     }
-                    PNH_Logger.Log("Logistics", "[PNH_CORE] Recompensa gerada para Tier " + tierAtual + " com " + itensGerados + " itens.");
+                    PNH_Logger.Log("Logistics", "[PNH_CORE] Recompensa gerada para Tier " + tierAtual + ". Total: " + itensGerados + " itens colocados no barril.");
                 }
                 else
                 {
                     // Proteção caso o JSON esteja vazio
                     container.GetInventory().CreateInInventory("BandageDressing");
+                    PNH_Logger.Log("Logistics", "[PNH_CORE] Recompensa de emergencia gerada.");
                 }
             }
         }

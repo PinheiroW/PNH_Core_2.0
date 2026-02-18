@@ -48,6 +48,9 @@ class PNH_MissionSettings
         m_ConfigData.DebugSettings.DebugShowInfo = false;
         m_ConfigData.ConfiguracoesGerais.TempoEntreMissoesMinutos = 1;
         m_ConfigData.ConfiguracoesGerais.TempoLimpezaSegundos = 5;
+        
+        // --- NOVO: Limite máximo de itens no barril ---
+        m_ConfigData.ConfiguracoesGerais.MaxItensNoBarril = 10; 
 
         // 2. Catálogo de Missões e Tiers
         m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("Apartment");
@@ -100,7 +103,7 @@ class PNH_MissionSettings
         m_ConfigData.NPCsQuestGivers.Insert(npc2);
 
         // =======================================================
-        // 6. TEXTOS EDITÁVEIS DE INTERFACE (NOVO)
+        // 6. TEXTOS EDITÁVEIS DE INTERFACE
         // =======================================================
         m_ConfigData.Textos.Erro_LongeNPC = "[ERRO PNH] Voce precisa estar perto do Oficial PNH para assinar o contrato!";
         m_ConfigData.Textos.Erro_JaAssinado = "[ERRO PNH] Este contrato ja foi assinado por outro mercenario.";
