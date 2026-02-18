@@ -15,8 +15,21 @@ class PNH_MissionManager
     }
 
     static PNH_MissionManager GetInstance() { return m_Instance; }
-    void ReloadMissions() { PNH_MissionSettings.Load(); }
-    void ForceMissionCycle() { if (m_ActiveMission) m_ActiveMission.CleanUp(); m_ActiveMission = null; m_MissionState = 0; m_CooldownTimer = 10; }
+
+    void ReloadMissions() 
+    { 
+        PNH_MissionSettings.Load(); 
+        // PNH 2.0: Avisa o Agente de NPCs para atualizar o mapa se o JSON mudou
+        PNH_NPCManager.GetInstance().SpawnAllNPCs(); 
+    }
+
+    void ForceMissionCycle() 
+    { 
+        if (m_ActiveMission) m_ActiveMission.CleanUp(); 
+        m_ActiveMission = null; 
+        m_MissionState = 0; 
+        m_CooldownTimer = 10; 
+    }
 
     void ResetCooldown()
     {
@@ -25,20 +38,24 @@ class PNH_MissionManager
         else m_CooldownTimer = 300; 
     }
 
-    void SpawnNPCs()
+    void SendLoreMessages()
     {
-        PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-        if (!config) return;
-        foreach (PNH_MissionSettings_NPC npcData : config.NPCsQuestGivers)
-        {
-            PlayerBase npc = PlayerBase.Cast(GetGame().CreateObject("SurvivorM_Mirek", npcData.Posicao.ToVector(), false, false, true));
-            if (npc) {
-                npc.SetPosition(npcData.Posicao.ToVector()); npc.SetOrientation(npcData.Orientacao.ToVector());
-                foreach (string item : npcData.Roupas) { npc.GetInventory().CreateInInventory(item); }
-                npc.SetAllowDamage(false);
-            }
-        }
+        if (!m_ActiveMission) return;
+        
+        string tag = "[" + m_ActiveMission.m_MissionInformant + "] ";
+        PNH_Utils.SendMessageToAll(tag + m_ActiveMission.m_MissionMessage1);
+        
+        if (m_ActiveMission.m_MissionMessage2 != "")
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 3000, false, tag + m_ActiveMission.m_MissionMessage2);
+        
+        if (m_ActiveMission.m_MissionMessage3 != "")
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 6000, false, tag + m_ActiveMission.m_MissionMessage3);
+            
+        if (m_ActiveMission.m_MissionMessage4 != "")
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 9000, false, tag + m_ActiveMission.m_MissionMessage4);
     }
+
+    void DelayedMessage(string msg) { PNH_Utils.SendMessageToAll(msg); }
 
     void OnUpdate(float timeslice)
     {
@@ -77,7 +94,6 @@ class PNH_MissionManager
             selectedMission = todasAsMissoes.GetRandomElement();
         }
 
-        // MAPEAMENTO COMPLETO DE CLASSES E TIERS
         if (selectedMission == "Apartment") { m_ActiveMission = new ApartmentMission(); m_ActiveMission.m_MissionTier = 3; }
         else if (selectedMission == "Horde") { m_ActiveMission = new HordeMission(); m_ActiveMission.m_MissionTier = 1; }
         else if (selectedMission == "BearHunt") { m_ActiveMission = new BearHuntMission(); m_ActiveMission.m_MissionTier = 1; }
@@ -98,8 +114,6 @@ class PNH_MissionManager
         if (selectedIdx != -1) {
             m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(selectedIdx);
             string eventName = PNH_EventsWorldData.MissionEvents.Get(selectedIdx);
-            
-            // CORREÇÃO: Captura o nome COMPLETO do local após o nome da classe
             int startPos = selectedMission.Length() + 1;
             if (eventName.Length() > startPos) {
                 m_ActiveMission.m_MissionLocation = eventName.Substring(startPos, eventName.Length() - startPos);

@@ -1,31 +1,19 @@
 modded class MissionServer
 {
-    ref PNH_MissionManager m_PNH_MissionManager;
-
     override void OnInit()
     {
         super.OnInit();
         
-        PNH_CoreConfig.Load();
-        PNH_Logger.Log("Core", "Sistema PNH Utils e Config carregados.");
+        // --- INICIALIZAÇÃO PNH CORE 2.0 (ARQUITETURA DE AGENTES) ---
+        PNH_Logger.Log("Core", "[PNH_CORE] Sistema Central a arrancar...");
         
-        m_PNH_MissionManager = new PNH_MissionManager();
-
-        // --- ADIÇÃO PNH 2.0: INVOCA O SPAWN DOS NPCs NO INÍCIO DO SERVIDOR ---
-        if (m_PNH_MissionManager)
-        {
-            m_PNH_MissionManager.SpawnNPCs();
-        }
-    }
-
-    override void OnUpdate(float timeslice)
-    {
-        super.OnUpdate(timeslice);
-
-        if (m_PNH_MissionManager)
-        {
-            m_PNH_MissionManager.OnUpdate(timeslice);
-        }
+        PNH_ProfileManager.Init();
+        PNH_MissionManager.GetInstance(); 
+        
+        // PNH 2.0: O Agente de População entra em cena
+        PNH_NPCManager.GetInstance().SpawnAllNPCs(); 
+        
+        PNH_Logger.Log("Core", "[PNH_CORE] Todos os Agentes Inicializados.");
     }
 
     override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity)
@@ -34,12 +22,14 @@ modded class MissionServer
         
         if (player && identity)
         {
-            string steamID = identity.GetPlainId();
-            string name = identity.GetName();
+            string plainId = identity.GetPlainId();
+            string pName = identity.GetName();
+            PNH_PlayerProfileData profile = PNH_ProfileManager.LoadProfile(plainId, pName);
             
-            // Regista o perfil do jogador no banco de dados PNH
-            PNH_ProfileManager.LoadProfile(steamID, name);
-            PNH_Logger.Log("Profiles", "[PNH_2.0] Perfil verificado/criado com sucesso para: " + name);
+            if (profile)
+            {
+                PNH_Logger.Log("Profiles", "[PNH_CORE] Perfil verificado para: " + pName + " (XP: " + profile.XP + ")");
+            }
         }
     }
 }
