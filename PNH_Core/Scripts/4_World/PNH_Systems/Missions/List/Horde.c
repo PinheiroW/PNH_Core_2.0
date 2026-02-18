@@ -5,50 +5,58 @@ class HordeMission extends PNH_MissionBase
         if (!m_MissionAccepted) return false;
         m_MissionAIs.Clear();
 
-        // Spawn de 15 soldados infectados
+        // LOGÍSTICA: Delegamos a criação física dos infectados para o agente responsável
         for (int i = 0; i < 15; i++)
         {
-            vector spawnPos = m_MissionPosition + Vector(Math.RandomFloat(-10, 10), 0, Math.RandomFloat(-10, 10));
-            spawnPos[1] = GetGame().SurfaceY(spawnPos[0], spawnPos[2]); 
-            
-            Object npc = GetGame().CreateObject("ZmbM_SoldierNormal", spawnPos, false, true, true);
-            if (npc) {
-                npc.SetPosition(spawnPos);
-                m_MissionAIs.Insert(npc);
-            }
+            Object npc = PNH_LogisticsManager.SpawnNPC("ZmbM_SoldierNormal", m_MissionPosition, 15.0);
+            if (npc) m_MissionAIs.Insert(npc);
         }
-        PNH_Logger.Log("Missões", "[PNH_CORE] Spawn físico da horda concluído: " + m_MissionAIs.Count() + " alvos.");
+        
+        // AUDITORIA: Registamos o início tático da missão
+        PNH_AuditManager.LogMissionEvent(m_MissionOwnerName, "Horde", "Infectados Materializados");
         return true;
     }
 
     override void PlayerChecks(PlayerBase player)
     {
-        // O Manager só permite esta verificação após 15s de materialização
-        if (!m_MissionAccepted || !IsContractOwner(player) || m_MissionAIs.Count() == 0) return;
+        if (!m_MissionAccepted || !IsContractOwner(player)) return;
 
-        bool zombiesAlive = false;
-        foreach (Object ai : m_MissionAIs) {
-            if (ai && EntityAI.Cast(ai).IsAlive()) { 
-                zombiesAlive = true; 
-                break; 
+        // INTELIGÊNCIA: Validamos se o jogador está na zona de combate antes de processar lógica
+        if (!PNH_IntelManager.IsOwnerInObjectiveZone(m_MissionOwnerID, m_MissionPosition, m_MissionZoneOuterRadius)) return;
+
+        // Verificação de alvos vivos (Lógica interna da missão)
+        if (m_MissionAIs.Count() > 0)
+        {
+            bool zombiesAlive = false;
+            foreach (Object ai : m_MissionAIs) 
+            {
+                if (ai && EntityAI.Cast(ai).IsAlive()) 
+                { 
+                    zombiesAlive = true; 
+                    break; 
+                }
             }
-        }
 
-        if (!zombiesAlive) {
-            MissionFinal();
-            PNH_MissionManager.GetInstance().EndMission();
+            if (!zombiesAlive) 
+            {
+                MissionFinal();
+                PNH_MissionManager.GetInstance().EndMission();
+            }
         }
     }
 
     override void MissionFinal()
     {
-        // 1. O rádio/Discord anuncia a conclusão
+        // COMUNICAÇÃO: O rádio anuncia a vitória
         PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName);
 
-        // 2. A Tesouraria processa o pagamento usando os dados do contrato
+        // TESOURARIA: Processa o pagamento de XP de forma atómica
         if (m_MissionAccepted && m_MissionOwnerID != "")
         {
             PNH_TreasuryManager.ProcessMissionReward(m_MissionOwnerID, m_MissionOwnerName, m_MissionTier);
         }
+
+        // AUDITORIA: Registo final da operação bem-sucedida
+        PNH_AuditManager.LogMissionEvent(m_MissionOwnerName, "Horde", "Contrato Finalizado");
     }
 }

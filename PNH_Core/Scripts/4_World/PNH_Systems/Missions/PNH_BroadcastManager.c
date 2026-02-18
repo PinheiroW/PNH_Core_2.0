@@ -10,16 +10,18 @@ class PNH_BroadcastManager
         return m_Instance;
     }
 
-    // --- ENVIOS BÁSICOS ---
+    // --- CANAIS DE SAÍDA PUROS ---
     void BroadcastGlobal(string message) { PNH_Utils.SendMessageToAll(message); }
     void SendToPlayer(PlayerBase player, string message) { if (player) PNH_Utils.SendMessage(player, message); }
 
-    // --- ANÚNCIOS OFICIAIS DE SISTEMA (Sincronizados com Rádio, Discord e Logs) ---
-    void AnnounceMissionAvailable(string npcLocal)
+    // --- ANÚNCIOS TÁTICOS (Rádio + Discord + Audit) ---
+    void AnnounceMissionAvailable(string location)
     {
-        string msg = "[ALERTA PNH] Nova operacao disponivel em " + npcLocal + ". Va ate ao local para assinar o contrato!";
+        string msg = "[ALERTA PNH] Nova operacao disponivel em " + location + ". Va ate ao local para assinar o contrato!";
         BroadcastGlobal(msg);
-        PNH_Logger.Log("Missões", "[PNH_CORE] Sorteio realizado: " + npcLocal);
+        
+        // Delegamos o registo para o AuditManager se já estiver ativo, ou Logger como fallback
+        PNH_Logger.Log("Missões", "[PNH_CORE] Sorteio realizado: " + location);
     }
 
     void AnnounceMissionStarted(string missionType, string location, string ownerName)
@@ -28,8 +30,7 @@ class PNH_BroadcastManager
         string discordMsg = "[PNH_CORE] MISSÃO INICIADA: " + missionType + " em " + location + " por " + ownerName;
         
         BroadcastGlobal(globalMsg);
-        PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg);
-        PNH_Logger.Log("Missões", discordMsg);
+        PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3066993, PNH_CoreConfig.GetMissionsURL());
     }
 
     void AnnounceMissionEnded(string ownerName)
@@ -38,26 +39,26 @@ class PNH_BroadcastManager
         string discordMsg = "[PNH_CORE] MISSÃO CONCLUÍDA por " + ownerName;
         
         BroadcastGlobal(globalMsg);
-        PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg);
-        PNH_Logger.Log("Missões", discordMsg);
+        PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3447003, PNH_CoreConfig.GetMissionsURL());
     }
 
-    // --- SISTEMA DE INSTRUÇÕES COM ATRASO (Lore) ---
-    void SendLoreMessages(PNH_MissionBase mission)
+    // --- NOVO SISTEMA DE LORE (MENSAGEIRO PURO) ---
+    // Agora o Manager não conhece as mensagens, ele apenas as entrega com o atraso correto
+    void DeliverMissionBriefing(string informant, array<string> messages)
     {
-        if (!mission) return;
-        string tag = "[" + mission.m_MissionInformant + "] ";
-        BroadcastGlobal(tag + mission.m_MissionMessage1);
+        if (!messages || messages.Count() == 0) return;
+
+        string tag = "[" + informant + "] ";
         
-        if (mission.m_MissionMessage2 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 3000, false, tag + mission.m_MissionMessage2);
-            
-        if (mission.m_MissionMessage3 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 6000, false, tag + mission.m_MissionMessage3);
-            
-        if (mission.m_MissionMessage4 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 9000, false, tag + mission.m_MissionMessage4);
+        for (int i = 0; i < messages.Count(); i++)
+        {
+            string msg = messages.Get(i);
+            if (msg == "") continue;
+
+            // Escalonamento de mensagens: 0s, 3s, 6s, 9s...
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, (i * 3000), false, tag + msg);
+        }
     }
 
-    void DelayedMessage(string msg) { BroadcastGlobal(msg); }
+    private void DelayedMessage(string msg) { BroadcastGlobal(msg); }
 }
