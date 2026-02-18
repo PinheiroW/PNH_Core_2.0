@@ -39,7 +39,6 @@ class PNH_ChatManager
                 else if (pData.Patente == 3) { rankName = "Especialista"; nextXP = settings.TabelaXP.XP_Lenda; nextRankName = "Lenda"; }
                 else if (pData.Patente == 4) { rankName = "Lenda"; nextXP = 0; nextRankName = "N/A"; }
 
-                // CORREÇÃO ENFUSION: Não usar operador ternário (? :)
                 string statusMissao = "NAO";
                 if (pData.TemMissaoAtiva) statusMissao = "SIM";
 
@@ -93,11 +92,17 @@ class PNH_ChatManager
 
             manager.m_ActiveMission.AcceptContract(player, manager.m_ActiveMission.m_MissionTier, manager.m_ActiveMission.m_MissionType);
             
+            // PNH 2.0: O Agente de Transmissão assume o rádio e o Discord!
             if (manager.m_ActiveMission.DeployMission())
             {
-                PNH_Utils.SendMessage(player, "=== CONTRATO ASSINADO COM: " + npcName + " ===");
-                PNH_Utils.SendMessage(player, "O seu alvo esta em: " + manager.m_ActiveMission.m_MissionLocation);
-                PNH_Utils.SendMessageToAll("[RADIO PNH] Um mercenario fechou o contrato de " + manager.m_ActiveMission.m_MissionLocation + "!");
+                PNH_BroadcastManager bManager = PNH_BroadcastManager.GetInstance();
+                
+                bManager.SendToPlayer(player, "=== CONTRATO ASSINADO COM: " + npcName + " ===");
+                bManager.SendToPlayer(player, "O seu alvo esta em: " + manager.m_ActiveMission.m_MissionLocation);
+                
+                bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, player.GetIdentity().GetName());
+                
+                bManager.SendLoreMessages(manager.m_ActiveMission);
             }
             return true;
         }

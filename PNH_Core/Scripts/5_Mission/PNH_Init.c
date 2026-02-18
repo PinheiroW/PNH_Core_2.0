@@ -7,13 +7,19 @@ modded class MissionServer
         // --- INICIALIZAÇÃO PNH CORE 2.0 (ARQUITETURA DE AGENTES) ---
         PNH_Logger.Log("Core", "[PNH_CORE] Sistema Central a arrancar...");
         
+        // 1. Inicia Banco de Dados (Perfis e XP)
         PNH_ProfileManager.Init();
+        
+        // 2. Inicia o Diretor de Tempo e Sorteio (Manager Base)
         PNH_MissionManager.GetInstance(); 
         
-        // PNH 2.0: O Agente de População entra em cena
+        // 3. Inicia o Agente de População de NPCs (Zelador)
         PNH_NPCManager.GetInstance().SpawnAllNPCs(); 
         
-        PNH_Logger.Log("Core", "[PNH_CORE] Todos os Agentes Inicializados.");
+        // 4. Inicia o Agente de Comunicação (Rádio e Discord)
+        PNH_BroadcastManager.GetInstance();
+        
+        PNH_Logger.Log("Core", "[PNH_CORE] Todos os Agentes Inicializados com Sucesso.");
     }
 
     override void InvokeOnConnect(PlayerBase player, PlayerIdentity identity)

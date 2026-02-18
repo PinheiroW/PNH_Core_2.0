@@ -19,16 +19,13 @@ class PNH_MissionManager
     void ReloadMissions() 
     { 
         PNH_MissionSettings.Load(); 
-        // PNH 2.0: Avisa o Agente de NPCs para atualizar o mapa se o JSON mudou
         PNH_NPCManager.GetInstance().SpawnAllNPCs(); 
     }
 
     void ForceMissionCycle() 
     { 
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
-        m_ActiveMission = null; 
-        m_MissionState = 0; 
-        m_CooldownTimer = 10; 
+        m_ActiveMission = null; m_MissionState = 0; m_CooldownTimer = 10; 
     }
 
     void ResetCooldown()
@@ -37,25 +34,6 @@ class PNH_MissionManager
             m_CooldownTimer = PNH_MissionSettings.GetData().ConfiguracoesGerais.TempoEntreMissoesMinutos * 60;
         else m_CooldownTimer = 300; 
     }
-
-    void SendLoreMessages()
-    {
-        if (!m_ActiveMission) return;
-        
-        string tag = "[" + m_ActiveMission.m_MissionInformant + "] ";
-        PNH_Utils.SendMessageToAll(tag + m_ActiveMission.m_MissionMessage1);
-        
-        if (m_ActiveMission.m_MissionMessage2 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 3000, false, tag + m_ActiveMission.m_MissionMessage2);
-        
-        if (m_ActiveMission.m_MissionMessage3 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 6000, false, tag + m_ActiveMission.m_MissionMessage3);
-            
-        if (m_ActiveMission.m_MissionMessage4 != "")
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, 9000, false, tag + m_ActiveMission.m_MissionMessage4);
-    }
-
-    void DelayedMessage(string msg) { PNH_Utils.SendMessageToAll(msg); }
 
     void OnUpdate(float timeslice)
     {
@@ -125,7 +103,9 @@ class PNH_MissionManager
         m_MissionState = 1;
         string npcLocal = "Green Mountain";
         if (m_ActiveMission.m_MissionTier >= 3) npcLocal = "Radio Zenit";
-        PNH_Utils.SendMessageToAll("[ALERTA PNH] Nova operacao disponivel em " + npcLocal + ". Va ate ao local para assinar o contrato!");
+        
+        // PNH 2.0: Chama o Agente de Mídia para anunciar globalmente
+        PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(npcLocal);
     }
 
     void EndMission() { if (m_ActiveMission) m_ActiveMission.CleanUp(); m_ActiveMission = null; m_MissionState = 0; ResetCooldown(); }

@@ -3,7 +3,12 @@ class HordeMission extends PNH_MissionBase
 	override bool DeployMission()
 	{
 		if (!m_MissionAccepted) return false; 
-		m_MissionInformant = "Comando PNH";
+		
+		m_MissionInformant = "COMANDO PNH";
+		m_MissionMessage1 = "ATENÇÃO MERCENÁRIO: Horda militar detectada em " + m_MissionLocation;
+		m_MissionMessage2 = "Os alvos estao armados e sao extremamente agressivos.";
+		m_MissionMessage3 = "Elimine todos para limpar o setor e receber o seu XP.";
+		m_MissionMessage4 = "Mantenha a radio ligada para novas atualizacoes.";
 		
 		for (int i = 0; i < 15; i++)
 		{
@@ -13,7 +18,7 @@ class HordeMission extends PNH_MissionBase
 			if (npc) m_MissionAIs.Insert(npc);
 		}
 
-		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: Horde em " + m_MissionLocation);
+		// PNH 2.0: Removemos os envios daqui. O Agente de Mídia cuida disso.
 		return true;
 	}
 
@@ -32,8 +37,8 @@ class HordeMission extends PNH_MissionBase
 
 	override void MissionFinal()
 	{
-		PNH_Utils.SendMessageToAll("[RÁDIO PNH] A horda foi desmantelada por " + m_MissionOwnerName + "!");
-		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_CONCLUÍDA: " + m_MissionOwnerName);
+        // PNH 2.0: Chama o Agente para anunciar a vitória
+		PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName);
 
 		if (m_MissionAccepted && m_MissionOwnerID != "")
 		{
