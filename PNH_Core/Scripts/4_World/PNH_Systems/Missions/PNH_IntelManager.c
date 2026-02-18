@@ -1,11 +1,9 @@
 class PNH_IntelManager
 {
-    // Verifica se o dono da missão está dentro de um raio específico da zona
-    static bool IsOwnerInObjectiveZone(string ownerID, vector zonePos, float radius)
+    // CORREÇÃO: Função otimizada para receber o PlayerBase direto, poupando CPU
+    static bool IsPlayerInZone(PlayerBase player, vector zonePos, float radius)
     {
-        PlayerBase player = PNH_Utils.GetPlayerBySteamID(ownerID);
         if (!player) return false;
-
         float distance = vector.Distance(player.GetPosition(), zonePos);
         return (distance <= radius);
     }
