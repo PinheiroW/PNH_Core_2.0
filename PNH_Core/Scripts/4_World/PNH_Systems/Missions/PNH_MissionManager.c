@@ -1,9 +1,9 @@
 /// --- Documentação PNH_Core: PNH_MissionManager.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Atuar como o motor central do sistema de missões, gerindo o ciclo de vida completo (IDLE, Disponível, Materializando e Ativa), controlando os timers de cooldown e realizando o sorteio aleatório de novas missões e coordenadas.
-/// Comunicação com outros arquivos: Recebe batimento cardíaco (OnUpdate) do PNH_Init.c, utiliza o PNH_EventsWorldData.c para obter coordenadas, instancia classes de missão (como HordeMission), reporta eventos ao PNH_AuditManager.c e solicita anúncios ao PNH_BroadcastManager.c.
-/// Motivo da existência do arquivo no sistema: Centralizar a máquina de estados das missões do servidor, garantindo que o fluxo de sorteio, execução e limpeza ocorra de forma automática e organizada.
-/// Dependências internas: PNH_MissionSettings.c (carregamento de configs), PNH_EventsWorldData.c (base de dados de locais), PNH_AuditManager.c (registos) e PNH_TimeManager.c (controlo de tempo).
+/// Versão do Sistema: 1.1.0 (Integração de Narrativa Dinâmica)
+/// Função do arquivo: Atuar como o motor central das missões. Agora, além de gerir estados e timers, é responsável por injetar a Lore correta do dicionário JSON na missão ativa.
+/// Comunicação com outros arquivos: Recebe batimento do PNH_Init.c. Consulta PNH_MissionSettings.c para obter o dicionário de lore e alimenta o objeto m_ActiveMission com as etapas de rádio.
+/// Motivo da existência no sistema: Centralizar a inteligência de execução e garantir que cada missão sorteada tenha acesso aos seus textos de narrativa específicos.
+/// Dependências internas: PNH_MissionSettings.c (dados), PNH_EventsWorldData.c (locais), PNH_AuditManager.c e PNH_TimeManager.c.
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
@@ -72,18 +72,35 @@ class PNH_MissionManager
 
     void StartRandomMission()
     {
+        // 1. Instanciação Base
         m_ActiveMission = new HordeMission(); 
         m_ActiveMission.m_MissionTier = 1;
         m_ActiveMission.m_MissionType = "Horde";
         
+        // --- NOVO: INJEÇÃO DE NARRATIVA DINÂMICA ---
+        // Procuramos no dicionário de configurações os diálogos para este tipo de missão
+        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+        if (settings && settings.DicionarioMissoes)
+        {
+            foreach (PNH_DicionarioMissao dic : settings.DicionarioMissoes)
+            {
+                if (dic.TipoMissao == m_ActiveMission.m_MissionType)
+                {
+                    // Entrega os textos das 4 etapas (Aceitou, 90m, 20m, Final) à missão
+                    m_ActiveMission.m_LoreEtapas = dic.Etapas;
+                    PNH_Logger.Log("Manager", "[PNH] Narrativa Dinâmica vinculada: " + dic.TipoMissao);
+                    break;
+                }
+            }
+        }
+        
         PNH_EventsWorldData.Init();
         
-        // CORREÇÃO: Filtra para escolher APENAS missões da "Horde"
         array<int> validIndexes = new array<int>;
         for (int i = 0; i < PNH_EventsWorldData.MissionEvents.Count(); i++)
         {
             string eventName = PNH_EventsWorldData.MissionEvents.Get(i);
-            if (eventName.Contains("Horde")) // Apenas palavras contendo Horde
+            if (eventName.Contains("Horde")) 
             {
                 validIndexes.Insert(i);
             }
@@ -91,7 +108,6 @@ class PNH_MissionManager
 
         if (validIndexes.Count() > 0)
         {
-            // Sorteia um índice válido do nosso filtro
             int randPos = Math.RandomInt(0, validIndexes.Count());
             int randIndex = validIndexes.Get(randPos);
             

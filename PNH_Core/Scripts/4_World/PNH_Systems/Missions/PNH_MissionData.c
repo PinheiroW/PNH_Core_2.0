@@ -1,8 +1,8 @@
 /// --- Documentação PNH_Core: PNH_MissionData.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Definir as classes de dados e modelos (Data Models) que estruturam o ficheiro de configuração PNH_MissionSettings.json, incluindo as definições para Tiers, Loot, NPCs, Tabela de XP e os Textos de Interface customizáveis.
-/// Comunicação com outros arquivos: Serve como o "esqueleto" de dados utilizado pelo PNH_MissionSettings.c para carregar as configurações e por todos os Managers que precisam de ler regras ou tabelas de loot do JSON.
-/// Motivo da existência: Isolar a definição da estrutura de dados da lógica de processamento, permitindo expandir o mod (como adicionar novos parâmetros no JSON) de forma organizada e sem quebrar a lógica dos scripts.
+/// Versão do Sistema: 1.2.0 (Fase de Localização Total)
+/// Função do arquivo: Definir as classes de dados e modelos (Data Models) que estruturam o ficheiro de configuração PNH_MissionSettings.json. Agora expandido para suportar a localização de todas as mensagens de interface, chat e recompensas.
+/// Comunicação com outros arquivos: Serve como o "esqueleto" de dados utilizado pelo PNH_MissionSettings.c para carregar as configurações e é consultado pelo ChatManager e TreasuryManager.
+/// Motivo da existência: Isolar a definição da estrutura de dados da lógica de processamento, permitindo que o mod seja totalmente traduzível via JSON.
 /// Dependências internas: Nenhuma.
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
@@ -16,7 +16,7 @@ class PNH_DebugSettings {
 class PNH_ConfiguracoesGerais {
     int TempoEntreMissoesMinutos;
     int TempoLimpezaSegundos;
-    int MaxItensNoBarril; // NOVO: Quantidade limite de itens a sortear para o barril
+    int MaxItensNoBarril; 
     bool UsarPDA;
     bool ModoRP;
 }
@@ -78,12 +78,45 @@ class PNH_LootItem {
     int Quantidade;
 }
 
-// --- NOVA CLASSE PARA OS TEXTOS EDITÁVEIS ---
+// --- CLASSE DE TEXTOS EXPANDIDA PARA LOCALIZAÇÃO TOTAL ---
 class PNH_TextosInterface {
+    // Erros de Assinatura
     string Erro_LongeNPC;
     string Erro_JaAssinado;
     string Erro_PatenteBaixa;
     string Sucesso_Assinatura;
+
+    // Mensagens de Recompensa (Treasury)
+    string Msg_ContratoLiquidado; // Ex: "[PNH] CONTRATO LIQUIDADO: +%1 XP"
+
+    // Mensagens de Status (!perfil)
+    string Msg_StatusOperador;    // Ex: "Operador: %1"
+    string Msg_StatusPatente;     // Ex: "Patente: %1"
+    string Msg_StatusXP;          // Ex: "XP Atual: %1"
+    string Msg_StatusProximoNivel;// Ex: "Proximo Nivel: %1 XP para %2"
+    string Msg_StatusMissaoAtiva; // Ex: "Missao Ativa: %1"
+
+    // Mensagens de Consulta (!missao)
+    string Msg_MissaoDisponivel;  // Ex: "Temos um contrato disponivel em: %1"
+    string Msg_MissaoEmOperacao;  // Ex: "Ja existe um esquadrao em operacao."
+    string Msg_SemOperacoes;      // Ex: "Sem operacoes no momento. Aguardando Intel..."
+}
+
+class PNH_LoreEtapas {
+    string Aceitou;
+    string Chegou_90m;
+    string Chegou_20m;
+    string Concluiu;
+}
+
+class PNH_DicionarioMissao {
+    string TipoMissao;
+    ref PNH_LoreEtapas Etapas;
+
+    void PNH_DicionarioMissao(string tipo) {
+        TipoMissao = tipo;
+        Etapas = new PNH_LoreEtapas();
+    }
 }
 
 class PNH_MissionSettingsData {
@@ -93,11 +126,8 @@ class PNH_MissionSettingsData {
     ref PNH_RegrasContratos RegrasContratos;
     ref PNH_TabelaXP TabelaXP;
     ref array<ref PNH_NPCQuestGiver> NPCsQuestGivers;
-    
-    // Adicionamos a variável dos Textos aqui
     ref PNH_TextosInterface Textos;
-    
-    ref array<string> MissaoLore;
+    ref array<ref PNH_DicionarioMissao> DicionarioMissoes; 
     
     ref array<ref PNH_LootItem> Loot_Tier1;
     ref array<ref PNH_LootItem> Loot_Tier2;
@@ -111,10 +141,9 @@ class PNH_MissionSettingsData {
         RegrasContratos = new PNH_RegrasContratos();
         TabelaXP = new PNH_TabelaXP();
         NPCsQuestGivers = new array<ref PNH_NPCQuestGiver>;
-        
         Textos = new PNH_TextosInterface();
+        DicionarioMissoes = new array<ref PNH_DicionarioMissao>;
         
-        MissaoLore = new array<string>;
         Loot_Tier1 = new array<ref PNH_LootItem>;
         Loot_Tier2 = new array<ref PNH_LootItem>;
         Loot_Tier3 = new array<ref PNH_LootItem>;

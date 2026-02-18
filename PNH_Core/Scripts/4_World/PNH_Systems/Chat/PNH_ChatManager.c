@@ -1,9 +1,9 @@
 /// --- Documentação PNH_Core: PNH_ChatManager.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Processar, validar e executar comandos de texto enviados pelos jogadores no chat (como !status, !missao, !resumo, !aceitar e !reload_mission).
-/// Comunicação com outros arquivos: Interage com o PNH_ProfileManager (Utils.c) para exibir perfis, PNH_MissionManager.c para consultar o estado das missões, PNH_ContractBroker.c para assinatura de contratos e PNH_BroadcastManager.c para disparar notificações visuais na tela.
-/// Motivo da existência do arquivo no sistema: Atuar como a interface de comando e controlo (UI via Chat) entre o utilizador e o ecossistema de missões do PNH_Core.
-/// Dependências internas: PNH_Utils.c (mensagens e perfis), PNH_MissionSettings.c (dados de XP/Patente), PNH_MissionManager.c (estado global) e PNH_CoreConfig.c (validação de SuperAdmins).
+/// Versão do Sistema: 1.2.0 (Fase de Localização Total)
+/// Função do arquivo: Processar comandos de texto. Agora 100% localizado, utilizando o ficheiro JSON para todas as respostas de status e informações de missão ao jogador.
+/// Comunicação com outros arquivos: Interage com PNH_ProfileManager para dados de perfil e PNH_MissionSettings.c para recuperar as strings traduzíveis.
+/// Motivo da existência no sistema: Servir como interface de utilizador via chat, permitindo personalização total das mensagens sem alteração de código.
+/// Dependências internas: PNH_Utils.c, PNH_MissionSettings.c e PNH_MissionManager.c.
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
@@ -23,6 +23,9 @@ class PNH_ChatManager
         string command = args.Get(0);
         command.ToLower();
 
+        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+        if (!settings) return false;
+
         // =======================================================
         // --- COMANDO: STATUS / PERFIL DO JOGADOR ---
         // =======================================================
@@ -34,9 +37,8 @@ class PNH_ChatManager
             string pName = player.GetIdentity().GetName();
             
             PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(plainId, pName);
-            PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
             
-            if (pData && settings)
+            if (pData)
             {
                 string rankName = "Recruta";
                 int nextXP = settings.TabelaXP.XP_Mercenario;
@@ -49,12 +51,26 @@ class PNH_ChatManager
                 string statusMissao = "NAO";
                 if (pData.TemMissaoAtiva) statusMissao = "SIM";
 
+                // Formatação Dinâmica via JSON
+                string msgOp = settings.Textos.Msg_StatusOperador; msgOp.Replace("%1", pName);
+                string msgPat = settings.Textos.Msg_StatusPatente; msgPat.Replace("%1", rankName);
+                string msgXP = settings.Textos.Msg_StatusXP; msgXP.Replace("%1", pData.XP.ToString());
+                string msgMiss = settings.Textos.Msg_StatusMissaoAtiva; msgMiss.Replace("%1", statusMissao);
+
                 PNH_Utils.SendMessage(player, "------- PERFIL PNH 2.0 -------");
-                PNH_Utils.SendMessage(player, "Operador: " + pName);
-                PNH_Utils.SendMessage(player, "Patente: " + rankName);
-                PNH_Utils.SendMessage(player, "XP Atual: " + pData.XP);
-                if (nextXP > 0) PNH_Utils.SendMessage(player, "Proximo Nivel: " + (nextXP - pData.XP) + " XP para " + nextRankName);
-                PNH_Utils.SendMessage(player, "Missao Ativa: " + statusMissao);
+                PNH_Utils.SendMessage(player, msgOp);
+                PNH_Utils.SendMessage(player, msgPat);
+                PNH_Utils.SendMessage(player, msgXP);
+                
+                if (nextXP > 0) 
+                {
+                    string msgNext = settings.Textos.Msg_StatusProximoNivel;
+                    msgNext.Replace("%1", (nextXP - pData.XP).ToString());
+                    msgNext.Replace("%2", nextRankName);
+                    PNH_Utils.SendMessage(player, msgNext);
+                }
+
+                PNH_Utils.SendMessage(player, msgMiss);
                 PNH_Utils.SendMessage(player, "------------------------------");
             }
             return true;
@@ -70,23 +86,24 @@ class PNH_ChatManager
             {
                 if (managerMissao.m_MissionState == 1 && managerMissao.m_ActiveMission)
                 {
-                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Temos um contrato disponivel na regiao de: " + managerMissao.m_ActiveMission.m_MissionLocation);
-                    PNH_Utils.SendMessage(player, "Va ate ao local e use !aceitar perto do oficial.");
+                    string msgDisp = settings.Textos.Msg_MissaoDisponivel;
+                    msgDisp.Replace("%1", managerMissao.m_ActiveMission.m_MissionLocation);
+                    PNH_Utils.SendMessage(player, msgDisp);
                 }
                 else if (managerMissao.m_MissionState >= 2)
                 {
-                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Ja existe um esquadrao em operacao no momento. Aguarde nova janela.");
+                    PNH_Utils.SendMessage(player, settings.Textos.Msg_MissaoEmOperacao);
                 }
                 else
                 {
-                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Sem operacoes no momento. Aguardando Intel...");
+                    PNH_Utils.SendMessage(player, settings.Textos.Msg_SemOperacoes);
                 }
             }
             return true;
         }
 
         // =======================================================
-        // --- NOVO COMANDO: RESUMO DA MISSÃO (EXCLUSIVO DO DONO) ---
+        // --- COMANDO: RESUMO DA MISSÃO (DONO) ---
         // =======================================================
         if (command == "resumo")
         {
@@ -95,51 +112,35 @@ class PNH_ChatManager
             {
                 if (mngrResumo.m_ActiveMission.IsContractOwner(player))
                 {
-                    // CORREÇÃO: Converte o tempo para Inteiro (int) antes de usar o Módulo (%)
                     int timeLeftInt = (int)(mngrResumo.m_ActiveMission.m_MissionTimeout - mngrResumo.m_ActiveMission.m_MissionTime);
-                    int minutes = timeLeftInt / 60;
-                    int seconds = timeLeftInt % 60;
-                    string timeStr = minutes.ToStringLen(2) + ":" + seconds.ToStringLen(2);
+                    string timeStr = PNH_TimeManager.FormatTime(timeLeftInt);
 
                     string loc = mngrResumo.m_ActiveMission.m_MissionLocation;
 
-                    // Envia um Popup na Tela usando a nossa nova função
-                    PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(player, "OBJETIVO ATUAL", "Alvo: " + loc + "\nTempo Restante: " + timeStr, 10.0);
+                    PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(player, "OBJETIVO ATUAL", "Alvo: " + loc + "\nTempo: " + timeStr, 10.0);
 
-                    // Imprime a História no Chat
                     PNH_Utils.SendMessage(player, "=== INTEL DA MISSÃO ===");
                     PNH_Utils.SendMessage(player, "Alvo: " + loc);
                     PNH_Utils.SendMessage(player, "Informante: " + mngrResumo.m_ActiveMission.m_MissionInformant);
-                    for (int i = 0; i < mngrResumo.m_ActiveMission.m_MissionMessages.Count(); i++)
-                    {
-                        PNH_Utils.SendMessage(player, "- " + mngrResumo.m_ActiveMission.m_MissionMessages.Get(i));
-                    }
+                    
+                    // A Lore agora vem das Etapas configuradas
+                    PNH_Utils.SendMessage(player, "- " + mngrResumo.m_ActiveMission.m_LoreEtapas.Aceitou);
                     PNH_Utils.SendMessage(player, "=======================");
                 }
                 else
                 {
-                    PNH_Utils.SendMessage(player, "[ERRO] Voce nao possui o contrato ativo desta missao.");
+                    PNH_Utils.SendMessage(player, "[ERRO] Voce nao possui o contrato ativo.");
                 }
-            }
-            else
-            {
-                PNH_Utils.SendMessage(player, "[ERRO] Nenhuma missao ativa no momento.");
             }
             return true;
         }
 
-        // =======================================================
-        // --- COMANDO: ACEITAR CONTRATO ---
-        // =======================================================
         if (command == "aceitar")
         {
             PNH_ContractBroker.GetInstance().TryAcceptContract(player);
             return true;
         }
 
-        // =======================================================
-        // --- COMANDO ADMIN: RELOAD MISSION ---
-        // =======================================================
         if (command == "reload_mission")
         {
             string adminId = player.GetIdentity().GetPlainId();
@@ -150,12 +151,8 @@ class PNH_ChatManager
                 {
                     managerReload.ReloadMissions();
                     managerReload.ForceMissionCycle();
-                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo de missoes reiniciado.");
+                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo reiniciado.");
                 }
-            }
-            else
-            {
-                PNH_Utils.SendMessage(player, "[ERRO] Sem permissao PNH. Adicione o seu ID (" + adminId + ") no ficheiro de configuracao!");
             }
             return true;
         }

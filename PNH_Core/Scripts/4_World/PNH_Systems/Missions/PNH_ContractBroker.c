@@ -1,9 +1,9 @@
 /// --- Documentação PNH_Core: PNH_ContractBroker.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Gerir toda a lógica de validação e assinatura física de contratos, verificando a proximidade do jogador com o NPC Oficial, a disponibilidade da missão e se a patente do mercenário é compatível com o Tier exigido.
-/// Comunicação com outros arquivos: Comunica com o PNH_IntelManager.c para validação de distância, PNH_ProfileManager (Utils.c) para verificação de patentes, PNH_MissionManager.c para ativação da missão e PNH_BroadcastManager.c para anunciar o início da operação.
-/// Motivo da existência do arquivo no sistema: Isolar a lógica complexa de "venda" e validação de contratos, garantindo que o sistema de chat e o gestor de missões permaneçam limpos e focados apenas nas suas funções primárias.
-/// Dependências internas: PNH_MissionManager.c (estado da missão), PNH_BroadcastManager.c (notificações), PNH_MissionSettings.c (textos e tiers), PNH_IntelManager.c (distâncias), PNH_ProfileManager (dados de patente) e PNH_AuditManager.c (registo de eventos).
+/// Versão do Sistema: 1.2.0 (Fase de Localização e Narrativa)
+/// Função do arquivo: Gerir toda a lógica de validação e assinatura física de contratos.
+/// Comunicação com outros arquivos: Comunica com o PNH_IntelManager.c, PNH_ProfileManager, PNH_MissionManager.c e PNH_BroadcastManager.c.
+/// Motivo da existência do arquivo no sistema: Isolar a lógica complexa de "venda" e validação de contratos.
+/// Dependências internas: PNH_MissionManager.c, PNH_BroadcastManager.c, PNH_MissionSettings.c, PNH_IntelManager.c, PNH_ProfileManager e PNH_AuditManager.c.
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
@@ -74,7 +74,7 @@ class PNH_ContractBroker
             // CORREÇÃO PARA O DISCORD: Adicionamos os parênteses retos aqui
             string strCoords = "[X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString() + "]";
 
-            // NOVO: Formatação exata para o Webhook do Discord
+            // Formatação exata para o Webhook do Discord
             string discordMsg = "Jogador " + pName + " aceitou o contrato " + missionType + " em " + manager.m_ActiveMission.m_MissionLocation + " " + strCoords + ". (ID: " + plainId + ")";
 
             bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, strCoords, manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionOwnerID);
@@ -82,7 +82,11 @@ class PNH_ContractBroker
             // Dispara a mensagem formatada para o log/Discord
             PNH_AuditManager.LogMissionEvent("SISTEMA DE MISSÕES PNH", "", discordMsg);
             
-            bManager.DeliverMissionBriefing(manager.m_ActiveMission.m_MissionInformant, manager.m_ActiveMission.m_MissionMessages);
+            // --- CORREÇÃO DO CRASH: USO DO NOVO SISTEMA DE LORE (FASE 1) ---
+            if (manager.m_ActiveMission.m_LoreEtapas && manager.m_ActiveMission.m_LoreEtapas.Aceitou != "")
+            {
+                bManager.SendNotificationToPlayer(player, manager.m_ActiveMission.m_MissionInformant, manager.m_ActiveMission.m_LoreEtapas.Aceitou, 8.0, "Notifications/gui/data/info.edds");
+            }
         }
     }
 }

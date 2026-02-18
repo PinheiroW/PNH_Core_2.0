@@ -1,9 +1,9 @@
 /// --- Documentação PNH_Core: PNH_MissionBase.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Definir a classe base (blueprint) para todas as missões do sistema, contendo propriedades fundamentais como o dono do contrato, posição, tempo limite e métodos de limpeza (CleanUp) e aceitação.
-/// Comunicação com outros arquivos: É a classe pai de todas as missões específicas (ex: Horde.c) e é gerida diretamente pelo PNH_MissionManager.c, que armazena a instância da missão ativa.
-/// Motivo da existência do arquivo no sistema: Fornecer uma estrutura padronizada e reutilizável, garantindo que qualquer nova missão criada siga as mesmas regras de funcionamento e gestão de dados do Core.
-/// Dependências internas: Nenhuma dependência direta de outros Managers na sua definição base, mas é estendido por classes que utilizam o PNH_LogisticsManager.c e PNH_BroadcastManager.c.
+/// Versão do Sistema: 1.1.0 (Suporte à Narrativa Dinâmica)
+/// Função do arquivo: Definir a classe base (blueprint) para todas as missões, agora incluindo flags de controlo para mensagens de rádio por proximidade e suporte ao novo dicionário de etapas.
+/// Comunicação com outros arquivos: É estendido por missões como Horde.c e gerido pelo PNH_MissionManager.c. Utiliza o PNH_BroadcastManager.c para disparar as mensagens de rádio.
+/// Motivo da existência: Garantir que todas as missões herdem a lógica de estados e as flags de comunicação, evitando que mensagens de rádio sejam disparadas repetidamente.
+/// Dependências internas: PNH_MissionData.c (para a classe PNH_LoreEtapas).
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
@@ -23,9 +23,14 @@ class PNH_MissionBase
     
     ref array<Object> m_MissionAIs = new array<Object>;
 
-    // Sistema de Lore
+    // --- SISTEMA DE NARRATIVA DINÂMICA ---
     string m_MissionInformant;
-    ref array<string> m_MissionMessages;
+    ref PNH_LoreEtapas m_LoreEtapas; // Armazena os textos das 4 etapas
+    
+    // Flags de controlo para evitar repetição de rádio
+    bool m_Msg90mSent;
+    bool m_Msg20mSent;
+    bool m_MsgConcluiuSent;
 
     void PNH_MissionBase()
     {
@@ -36,7 +41,11 @@ class PNH_MissionBase
         m_MissionOwnerID = "";
         
         m_MissionInformant = "COMANDO PNH";
-        m_MissionMessages = new array<string>;
+        m_LoreEtapas = new PNH_LoreEtapas();
+        
+        m_Msg90mSent = false;
+        m_Msg20mSent = false;
+        m_MsgConcluiuSent = false;
     }
 
     void AcceptContract(PlayerBase player, int tier, string missionName)
@@ -64,5 +73,10 @@ class PNH_MissionBase
         foreach (Object ai : m_MissionAIs) { if (ai) GetGame().ObjectDelete(ai); }
         m_MissionAIs.Clear();
         m_MissionAccepted = false;
+        
+        // Reset das flags para o próximo ciclo
+        m_Msg90mSent = false;
+        m_Msg20mSent = false;
+        m_MsgConcluiuSent = false;
     }
 }

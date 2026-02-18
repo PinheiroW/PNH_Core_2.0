@@ -1,9 +1,9 @@
 /// --- Documentação PNH_Core: PNH_MissionSettings.c ---
-/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Gerir o ciclo de vida do ficheiro de configuração PNH_MissionSettings.json, sendo responsável por criar o ficheiro padrão com loot e textos customizáveis, carregar os dados para a memória e permitir o recarregamento (reload) das definições.
-/// Comunicação com outros arquivos: Providencia o método GetData() que é utilizado por quase todos os sistemas (Treasury, Logistics, ContractBroker, ChatManager) para aceder às regras definidas no JSON.
-/// Motivo da existência no sistema: Permitir que o comportamento das missões (loot, XP, textos e temporizadores) seja alterado de forma dinâmica sem necessidade de recompilar o mod.
-/// Dependências internas: PNH_MissionData.c (que define a estrutura de classes que este ficheiro preenche) e PNH_Logger.c para reportar o sucesso ou falha no processamento do JSON.
+/// Versão do Sistema: 1.2.0 (Fase de Localização Total)
+/// Função do arquivo: Gerir o ciclo de vida do ficheiro de configuração JSON, agora expandido para gerar e carregar todas as mensagens de interface, recompensas e chat de forma dinâmica.
+/// Comunicação com outros arquivos: Providencia o método GetData() utilizado por todos os sistemas. Utiliza as classes definidas no PNH_MissionData.c para estruturar o ficheiro físico.
+/// Motivo da existência no sistema: Centralizar a configuração de loot, XP e agora a localização total do mod, permitindo traduções sem necessidade de recompilar scripts.
+/// Dependências internas: PNH_MissionData.c (estruturas de dados) e PNH_Logger.c (registos de estado).
 /// Última atualização: 2026-02-18
 /// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
@@ -46,7 +46,6 @@ class PNH_MissionSettings
         return m_ConfigData;
     }
 
-    // --- GERAÇÃO DO CONTEÚDO PADRÃO COM TODAS AS FUNÇÕES ATIVAS ---
     static void CreateDefaultConfig()
     {
         m_ConfigData = new PNH_MissionSettingsData();
@@ -57,23 +56,13 @@ class PNH_MissionSettings
         m_ConfigData.DebugSettings.DebugShowInfo = false;
         m_ConfigData.ConfiguracoesGerais.TempoEntreMissoesMinutos = 1;
         m_ConfigData.ConfiguracoesGerais.TempoLimpezaSegundos = 5;
-        
-        // --- NOVO: Limite máximo de itens no barril ---
         m_ConfigData.ConfiguracoesGerais.MaxItensNoBarril = 10; 
 
         // 2. Catálogo de Missões e Tiers
-        m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("Apartment");
-        m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("BearHunt");
         m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("Horde");
-        m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("Graveyard");
-        m_ConfigData.CatalogoMissoes.Guia_MissoesDisponiveis.Insert("CityStore");
-        
-        m_ConfigData.CatalogoMissoes.Tier1_Recruta.Insert("BearHunt");
-        m_ConfigData.CatalogoMissoes.Tier1_Recruta.Insert("Graveyard");
-        m_ConfigData.CatalogoMissoes.Tier2_Mercenario.Insert("CityStore");
-        m_ConfigData.CatalogoMissoes.Tier2_Mercenario.Insert("Horde");
+        m_ConfigData.CatalogoMissoes.Tier1_Recruta.Insert("Horde");
 
-        // 3. Regras de Contratos (Distância, Tempo, etc)
+        // 3. Regras de Contratos
         m_ConfigData.RegrasContratos.CooldownMinutos = 10;
         m_ConfigData.RegrasContratos.RaioAbandonoMetros = 2000;
         m_ConfigData.RegrasContratos.TempoRecuperacaoPosMorteSegundos = 900;
@@ -86,70 +75,58 @@ class PNH_MissionSettings
         m_ConfigData.TabelaXP.XP_Tier_2 = 200;
         m_ConfigData.TabelaXP.XP_Tier_3 = 400;
         m_ConfigData.TabelaXP.XP_Tier_4 = 800;
-        m_ConfigData.TabelaXP.PerdaCombatLog = 50;
-        m_ConfigData.TabelaXP.PerdaTempo = 25;
         m_ConfigData.TabelaXP.XP_Mercenario = 200;
         m_ConfigData.TabelaXP.XP_Especialista = 600;
         m_ConfigData.TabelaXP.XP_Lenda = 1500;
 
-        // 5. Oficiais (NPCs Quest Givers)
+        // 5. Oficiais (NPCs)
         PNH_NPCQuestGiver npc1 = new PNH_NPCQuestGiver();
         npc1.Nome = "Ivan O Coletor";
-        npc1.Posicao = "4308.203125 321.532928 5414.665039";
-        npc1.Orientacao = "-50.409973 0.000000 0.000000";
+        npc1.Posicao = "4308.2 321.5 5414.6";
+        npc1.Orientacao = "-50.4 0 0";
         npc1.TiersDisponiveis.Insert(1);
         npc1.Roupas.Insert("TTsKO_Jacket_Cammo");
-        npc1.Roupas.Insert("TTsKO_Pants_Cammo");
         m_ConfigData.NPCsQuestGivers.Insert(npc1);
 
-        PNH_NPCQuestGiver npc2 = new PNH_NPCQuestGiver();
-        npc2.Nome = "Vlado O Velho";
-        npc2.Posicao = "4311.329102 321.532928 5417.958008";
-        npc2.Orientacao = "-50.409969 0.000000 0.000000";
-        npc2.TiersDisponiveis.Insert(2);
-        npc2.Roupas.Insert("HuntingJacket_Autumn");
-        npc2.Roupas.Insert("HunterPants_Autumn");
-        m_ConfigData.NPCsQuestGivers.Insert(npc2);
-
         // =======================================================
-        // 6. TEXTOS EDITÁVEIS DE INTERFACE
+        // 6. TEXTOS EDITÁVEIS DE INTERFACE (LOCALIZAÇÃO TOTAL)
         // =======================================================
+        // Mensagens de Assinatura
         m_ConfigData.Textos.Erro_LongeNPC = "[ERRO PNH] Voce precisa estar perto do Oficial PNH para assinar o contrato!";
         m_ConfigData.Textos.Erro_JaAssinado = "[ERRO PNH] Este contrato ja foi assinado por outro mercenario.";
         m_ConfigData.Textos.Erro_PatenteBaixa = "[ERRO PNH] A tua patente e insuficiente para este contrato!";
         m_ConfigData.Textos.Sucesso_Assinatura = "=== CONTRATO ASSINADO COM SUCESSO ===";
 
-        // 7. Lore Dinâmica
-        m_ConfigData.MissaoLore.Insert("Detectamos atividade hostil intensa nesta localidade.");
-        m_ConfigData.MissaoLore.Insert("Sua missao e neutralizar as ameacas e garantir o perimetro.");
+        // Mensagens de Recompensa (Treasury)
+        m_ConfigData.Textos.Msg_ContratoLiquidado = "[PNH] CONTRATO LIQUIDADO: +%1 XP";
 
-        // =======================================================
-        // 8. LOOT EXCLUSIVO POR TIER + PORCENTAGEM (RNG) E QUANTIDADE
-        // =======================================================
-        
-        // --- Loot Tier 1 (Recruta) ---
+        // Mensagens de Status de Perfil
+        m_ConfigData.Textos.Msg_StatusOperador = "Operador: %1";
+        m_ConfigData.Textos.Msg_StatusPatente = "Patente: %1";
+        m_ConfigData.Textos.Msg_StatusXP = "XP Atual: %1";
+        m_ConfigData.Textos.Msg_StatusProximoNivel = "Proximo Nivel: %1 XP para %2";
+        m_ConfigData.Textos.Msg_StatusMissaoAtiva = "Missao Ativa: %1";
+
+        // Mensagens de Consulta de Missão
+        m_ConfigData.Textos.Msg_MissaoDisponivel = "[COMANDO PNH] Temos um contrato disponivel na regiao de: %1";
+        m_ConfigData.Textos.Msg_MissaoEmOperacao = "[COMANDO PNH] Ja existe um esquadrao em operacao no momento.";
+        m_ConfigData.Textos.Msg_SemOperacoes = "[COMANDO PNH] Sem operacoes no momento. Aguardando Intel...";
+
+        // 7. Dicionário de Missões (Narrativa Dinâmica)
+        PNH_DicionarioMissao dicHorde = new PNH_DicionarioMissao("Horde");
+        dicHorde.Etapas.Aceitou = "Mercenario, uma horda foi avistada. Limpe a area imediatamente!";
+        dicHorde.Etapas.Chegou_90m = "Aviso: Movimentacao hostil detectada a 90 metros. Prepare as armas.";
+        dicHorde.Etapas.Chegou_20m = "Contato iminente! Voce entrou no perimetro da horda.";
+        dicHorde.Etapas.Concluiu = "Excelente trabalho. Perimetro limpo. Suprimentos a caminho.";
+        m_ConfigData.DicionarioMissoes.Insert(dicHorde);
+
+        // 8. Loot Tier 1
         PNH_LootItem loot1_1 = new PNH_LootItem(); loot1_1.Item = "SKS"; loot1_1.Chance = 15; loot1_1.Quantidade = 1;
-        PNH_LootItem loot1_2 = new PNH_LootItem(); loot1_2.Item = "Mosin9130"; loot1_2.Chance = 15; loot1_2.Quantidade = 1;
-        PNH_LootItem loot1_3 = new PNH_LootItem(); loot1_3.Item = "AmmoBox_762x39_20Rnd"; loot1_3.Chance = 50; loot1_3.Quantidade = 2;
-        PNH_LootItem loot1_4 = new PNH_LootItem(); loot1_4.Item = "BandageDressing"; loot1_4.Chance = 100; loot1_4.Quantidade = 3;
         m_ConfigData.Loot_Tier1.Insert(loot1_1);
-        m_ConfigData.Loot_Tier1.Insert(loot1_2);
-        m_ConfigData.Loot_Tier1.Insert(loot1_3);
-        m_ConfigData.Loot_Tier1.Insert(loot1_4);
-
-        // --- Loot Tier 2 (Mercenário) ---
-        PNH_LootItem loot2_1 = new PNH_LootItem(); loot2_1.Item = "M4A1"; loot2_1.Chance = 10; loot2_1.Quantidade = 1;
-        PNH_LootItem loot2_2 = new PNH_LootItem(); loot2_2.Item = "AKM"; loot2_2.Chance = 10; loot2_2.Quantidade = 1;
-        PNH_LootItem loot2_3 = new PNH_LootItem(); loot2_3.Item = "Mag_STANAG_30Rnd"; loot2_3.Chance = 40; loot2_3.Quantidade = 2;
-        PNH_LootItem loot2_4 = new PNH_LootItem(); loot2_4.Item = "TacticalBaconCan"; loot2_4.Chance = 100; loot2_4.Quantidade = 4;
-        m_ConfigData.Loot_Tier2.Insert(loot2_1);
-        m_ConfigData.Loot_Tier2.Insert(loot2_2);
-        m_ConfigData.Loot_Tier2.Insert(loot2_3);
-        m_ConfigData.Loot_Tier2.Insert(loot2_4);
 
         // Salva o arquivo fisicamente
         JsonFileLoader<PNH_MissionSettingsData>.JsonSaveFile(m_ConfigPath, m_ConfigData);
-        PNH_Logger.Log("Settings", "[PNH_CORE] PNH_MissionSettings.json criado com sucesso (Textos Customizaveis e Loot Avancado Ativos).");
+        PNH_Logger.Log("Settings", "[PNH_CORE] PNH_MissionSettings.json atualizado com Localização Total.");
     }
 
     static void Reload()
