@@ -15,7 +15,7 @@ class ApartmentMission extends PNH_MissionBase
         {
             vector spawnPos = m_MissionPosition + Vector(Math.RandomFloat(-8, 8), 0, Math.RandomFloat(-8, 8));
             spawnPos[1] = GetGame().SurfaceY(spawnPos[0], spawnPos[2]); 
-            Object npc = GetGame().CreateObjectEx("ZmbM_SoldierNormal_Heavy", spawnPos, ECE_PLACE_ON_SURFACE);
+            Object npc = GetGame().CreateObjectEx("ZmbM_SoldierNormal", spawnPos, ECE_PLACE_ON_SURFACE);
             if (npc) m_MissionAIs.Insert(npc);
         }
 

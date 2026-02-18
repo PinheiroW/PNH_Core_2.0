@@ -61,24 +61,31 @@ class PNH_ChatManager
             return true;
         }
 
-        // =======================================================
+// =======================================================
         // --- COMANDO ADMIN: RELOAD MISSION ---
         // =======================================================
         if (command == "reload_mission")
         {
-            if (PNH_CoreConfig.IsSuperAdmin(player.GetIdentity().GetPlainId()))
+            string plainId = player.GetIdentity().GetPlainId();
+            
+            // Verifica se é admin no teu JSON
+            if (PNH_CoreConfig.IsSuperAdmin(plainId))
             {
                 PNH_MissionManager manager = PNH_MissionManager.GetInstance();
                 if (manager)
                 {
                     manager.ReloadMissions();
                     manager.ForceMissionCycle();
-                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo reiniciado.");
+                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo de missoes reiniciado.");
                 }
+            }
+            else
+            {
+                // Se não for admin, avisa no ecrã e diz qual é o ID que tem de ser posto no JSON!
+                PNH_Utils.SendMessage(player, "[ERRO] Sem permissao PNH. Adicione o seu ID (" + plainId + ") no ficheiro de configuracao!");
             }
             return true;
         }
-
         return false;
     }
 }

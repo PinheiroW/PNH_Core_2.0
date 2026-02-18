@@ -1,6 +1,8 @@
 class PNH_MissionManager
 {
-    static PNH_MissionManager m_Instance;
+    // PNH 2.0: O "ref" blinda o Manager contra o Garbage Collector do DayZ
+    static ref PNH_MissionManager m_Instance; 
+    
     ref PNH_MissionBase m_ActiveMission;
     float m_UpdateTimer;
     int m_MissionState;     
@@ -8,13 +10,20 @@ class PNH_MissionManager
 
     void PNH_MissionManager()
     {
-        m_Instance = this; 
-        m_UpdateTimer = 0; m_MissionState = 0;
+        m_UpdateTimer = 0; 
+        m_MissionState = 0;
         PNH_MissionSettings.Load();
         ResetCooldown();
     }
 
-    static PNH_MissionManager GetInstance() { return m_Instance; }
+    // PNH 2.0: Agora sim, se o Manager não existir, ele é criado!
+    static PNH_MissionManager GetInstance() 
+    { 
+        if (!m_Instance) {
+            m_Instance = new PNH_MissionManager();
+        }
+        return m_Instance; 
+    }
 
     void ReloadMissions() 
     { 
@@ -41,14 +50,20 @@ class PNH_MissionManager
         if (m_UpdateTimer >= 2.0)
         {
             m_UpdateTimer = 0;
-            if (m_MissionState == 0) { m_CooldownTimer -= 2; if (m_CooldownTimer <= 0) StartRandomMission(); }
+            if (m_MissionState == 0) { 
+                m_CooldownTimer -= 2; 
+                if (m_CooldownTimer <= 0) StartRandomMission(); 
+            }
             else if (m_MissionState == 1 && m_ActiveMission && m_ActiveMission.m_MissionAccepted)
             {
                 m_ActiveMission.m_MissionTime += 2;
                 if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) EndMission();
                 else {
                     array<Man> players = new array<Man>; GetGame().GetPlayers(players);
-                    for (int i = 0; i < players.Count(); i++) { PlayerBase p = PlayerBase.Cast(players.Get(i)); if (p) m_ActiveMission.PlayerChecks(p); }
+                    for (int i = 0; i < players.Count(); i++) { 
+                        PlayerBase p = PlayerBase.Cast(players.Get(i)); 
+                        if (p) m_ActiveMission.PlayerChecks(p); 
+                    }
                 }
             }
         }
