@@ -13,10 +13,10 @@ class PNH_EventsWorldData
         if (MissionEvents.Count() > 0) return; // Evita carregar duas vezes
 
         // =========================================================================
-        // --- COORDENADA DE TESTE (Perto do Ivan em Green Mountain) ---
+        // --- COORDENADA DE TESTE (Alterada para Balota - Local Plano) ---
         // =========================================================================
-        MissionEvents.Insert("Horde Green_Mountain_Teste"); 
-        MissionPositions.Insert("4315.0 321.5 5420.0".ToVector()); 
+        MissionEvents.Insert("Horde Balota_Teste"); 
+        MissionPositions.Insert("4400.5 7.3 2517.7".ToVector());
 
         // =========================================================================
         // --- LISTA DE MISSÕES (Corrigidas com .ToVector()) ---

@@ -1,6 +1,5 @@
 class PNH_MissionManager
 {
-    // PNH 2.0: O "ref" blinda o Manager contra o Garbage Collector do DayZ
     static ref PNH_MissionManager m_Instance; 
     
     ref PNH_MissionBase m_ActiveMission;
@@ -8,20 +7,23 @@ class PNH_MissionManager
     int m_MissionState;     
     int m_CooldownTimer;
 
+    // --- DEFINIÇÃO DE ESTADOS PNH 2.0 ---
+    const int STATE_IDLE          = 0; // Cooldown (Aguardando próximo ciclo)
+    const int STATE_AVAILABLE     = 1; // Disponível (Sorteada, aguardando !aceitar)
+    const int STATE_MATERIALIZING = 2; // Aceita (Aguardando 15s para o DayZ fazer o spawn)
+    const int STATE_ACTIVE        = 3; // Em Curso (Vigilância de objetivos ligada)
+
     void PNH_MissionManager()
     {
         m_UpdateTimer = 0; 
-        m_MissionState = 0;
+        m_MissionState = STATE_IDLE;
         PNH_MissionSettings.Load();
         ResetCooldown();
     }
 
-    // PNH 2.0: Agora sim, se o Manager não existir, ele é criado!
     static PNH_MissionManager GetInstance() 
     { 
-        if (!m_Instance) {
-            m_Instance = new PNH_MissionManager();
-        }
+        if (!m_Instance) m_Instance = new PNH_MissionManager();
         return m_Instance; 
     }
 
@@ -34,7 +36,9 @@ class PNH_MissionManager
     void ForceMissionCycle() 
     { 
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
-        m_ActiveMission = null; m_MissionState = 0; m_CooldownTimer = 10; 
+        m_ActiveMission = null; 
+        m_MissionState = STATE_IDLE; 
+        m_CooldownTimer = 10; 
     }
 
     void ResetCooldown()
@@ -50,21 +54,58 @@ class PNH_MissionManager
         if (m_UpdateTimer >= 2.0)
         {
             m_UpdateTimer = 0;
-            if (m_MissionState == 0) { 
-                m_CooldownTimer -= 2; 
-                if (m_CooldownTimer <= 0) StartRandomMission(); 
-            }
-            else if (m_MissionState == 1 && m_ActiveMission && m_ActiveMission.m_MissionAccepted)
+
+            switch (m_MissionState)
             {
-                m_ActiveMission.m_MissionTime += 2;
-                if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) EndMission();
-                else {
-                    array<Man> players = new array<Man>; GetGame().GetPlayers(players);
-                    for (int i = 0; i < players.Count(); i++) { 
-                        PlayerBase p = PlayerBase.Cast(players.Get(i)); 
-                        if (p) m_ActiveMission.PlayerChecks(p); 
+                case STATE_IDLE:
+                    m_CooldownTimer -= 2;
+                    if (m_CooldownTimer <= 0) StartRandomMission();
+                    break;
+
+                case STATE_AVAILABLE:
+                    // Aguarda o comando !aceitar do jogador.
+                    // Quando o ContractBroker valida o contrato, ele deve mudar o estado para STATE_MATERIALIZING.
+                    if (m_ActiveMission && m_ActiveMission.m_MissionAccepted)
+                    {
+                        m_MissionState = STATE_MATERIALIZING;
+                        m_ActiveMission.m_MissionTime = 0; // Reinicia o relógio da missão
+                        PNH_Logger.Log("Missões", "[PNH_CORE] Contrato assinado. Iniciando materialização...");
                     }
-                }
+                    break;
+
+                case STATE_MATERIALIZING:
+                    // TRAVÃO DE SEGURANÇA: Dá 15 segundos ao motor do DayZ para criar os NPCs.
+                    // Durante este tempo, NENHUM PlayerCheck é executado.
+                    m_ActiveMission.m_MissionTime += 2;
+                    if (m_ActiveMission.m_MissionTime >= 15)
+                    {
+                        m_MissionState = STATE_ACTIVE;
+                        PNH_Logger.Log("Missões", "[PNH_CORE] Materialização concluída. Vigilância ativa.");
+                    }
+                    break;
+
+                case STATE_ACTIVE:
+                    if (!m_ActiveMission) { m_MissionState = STATE_IDLE; return; }
+                    
+                    m_ActiveMission.m_MissionTime += 2;
+
+                    // Verifica Timeout (Falha por tempo)
+                    if (m_ActiveMission.m_MissionTime >= m_ActiveMission.m_MissionTimeout) 
+                    {
+                        EndMission();
+                    }
+                    else 
+                    {
+                        // Executa a vigilância (PlayerChecks) apenas neste estado
+                        array<Man> players = new array<Man>; 
+                        GetGame().GetPlayers(players);
+                        for (int i = 0; i < players.Count(); i++) 
+                        { 
+                            PlayerBase p = PlayerBase.Cast(players.Get(i)); 
+                            if (p) m_ActiveMission.PlayerChecks(p); 
+                        }
+                    }
+                    break;
             }
         }
     }
@@ -74,7 +115,8 @@ class PNH_MissionManager
         PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
         string selectedMission = "";
 
-        if (config && config.DebugSettings.DebugMode && config.DebugSettings.DebugMission != "") selectedMission = config.DebugSettings.DebugMission;
+        if (config && config.DebugSettings.DebugMode && config.DebugSettings.DebugMission != "") 
+            selectedMission = config.DebugSettings.DebugMission;
         else {
             array<string> todasAsMissoes = new array<string>;
             if (config.CatalogoMissoes) {
@@ -87,6 +129,7 @@ class PNH_MissionManager
             selectedMission = todasAsMissoes.GetRandomElement();
         }
 
+        // Instanciação da missão (Mesma lógica anterior)
         if (selectedMission == "Apartment") { m_ActiveMission = new ApartmentMission(); m_ActiveMission.m_MissionTier = 3; }
         else if (selectedMission == "Horde") { m_ActiveMission = new HordeMission(); m_ActiveMission.m_MissionTier = 1; }
         else if (selectedMission == "BearHunt") { m_ActiveMission = new BearHuntMission(); m_ActiveMission.m_MissionTier = 1; }
@@ -108,20 +151,25 @@ class PNH_MissionManager
             m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(selectedIdx);
             string eventName = PNH_EventsWorldData.MissionEvents.Get(selectedIdx);
             int startPos = selectedMission.Length() + 1;
-            if (eventName.Length() > startPos) {
+            if (eventName.Length() > startPos) 
                 m_ActiveMission.m_MissionLocation = eventName.Substring(startPos, eventName.Length() - startPos);
-            } else {
+            else 
                 m_ActiveMission.m_MissionLocation = "Setor Desconhecido";
-            }
         }
 
-        m_MissionState = 1;
+        m_MissionState = STATE_AVAILABLE; // Muda para estado "Disponível"
+        
         string npcLocal = "Green Mountain";
         if (m_ActiveMission.m_MissionTier >= 3) npcLocal = "Radio Zenit";
         
-        // PNH 2.0: Chama o Agente de Mídia para anunciar globalmente
         PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(npcLocal);
     }
 
-    void EndMission() { if (m_ActiveMission) m_ActiveMission.CleanUp(); m_ActiveMission = null; m_MissionState = 0; ResetCooldown(); }
+    void EndMission() 
+    { 
+        if (m_ActiveMission) m_ActiveMission.CleanUp(); 
+        m_ActiveMission = null; 
+        m_MissionState = STATE_IDLE; 
+        ResetCooldown(); 
+    }
 }

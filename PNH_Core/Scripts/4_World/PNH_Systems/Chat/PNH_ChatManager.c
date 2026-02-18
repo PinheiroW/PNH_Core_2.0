@@ -56,20 +56,19 @@ class PNH_ChatManager
         // =======================================================
         if (command == "aceitar")
         {
-            // PNH 2.0: O Chat apenas repassa a ordem para o Agente Corretor.
             PNH_ContractBroker.GetInstance().TryAcceptContract(player);
             return true;
         }
 
-// =======================================================
+        // =======================================================
         // --- COMANDO ADMIN: RELOAD MISSION ---
         // =======================================================
         if (command == "reload_mission")
         {
-            string plainId = player.GetIdentity().GetPlainId();
+            // PNH 2.0 FIX: Mudámos para 'adminId' para evitar o erro de Multiple Declaration
+            string adminId = player.GetIdentity().GetPlainId();
             
-            // Verifica se é admin no teu JSON
-            if (PNH_CoreConfig.IsSuperAdmin(plainId))
+            if (PNH_CoreConfig.IsSuperAdmin(adminId))
             {
                 PNH_MissionManager manager = PNH_MissionManager.GetInstance();
                 if (manager)
@@ -81,8 +80,7 @@ class PNH_ChatManager
             }
             else
             {
-                // Se não for admin, avisa no ecrã e diz qual é o ID que tem de ser posto no JSON!
-                PNH_Utils.SendMessage(player, "[ERRO] Sem permissao PNH. Adicione o seu ID (" + plainId + ") no ficheiro de configuracao!");
+                PNH_Utils.SendMessage(player, "[ERRO] Sem permissao PNH. Adicione o seu ID (" + adminId + ") no ficheiro de configuracao!");
             }
             return true;
         }
