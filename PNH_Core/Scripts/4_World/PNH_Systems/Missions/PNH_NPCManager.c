@@ -25,7 +25,8 @@ class PNH_NPCManager
         if (!config || !config.NPCsQuestGivers) return;
 
         // 2. Faz o Spawn Limpo lendo o JSON
-        foreach (PNH_MissionSettings_NPC npcData : config.NPCsQuestGivers)
+        // CORREÇÃO: Atualizado para o novo nome da classe (PNH_NPCQuestGiver)
+        foreach (PNH_NPCQuestGiver npcData : config.NPCsQuestGivers)
         {
             PlayerBase npc = PlayerBase.Cast(GetGame().CreateObject("SurvivorM_Mirek", npcData.Posicao.ToVector(), false, false, true));
             if (npc) 
@@ -33,8 +34,12 @@ class PNH_NPCManager
                 npc.SetPosition(npcData.Posicao.ToVector()); 
                 npc.SetOrientation(npcData.Orientacao.ToVector());
                 
-                foreach (string item : npcData.Roupas) { 
-                    npc.GetInventory().CreateInInventory(item); 
+                // Proteção: Só tenta equipar roupas se a lista existir no JSON
+                if (npcData.Roupas && npcData.Roupas.Count() > 0)
+                {
+                    foreach (string item : npcData.Roupas) { 
+                        npc.GetInventory().CreateInInventory(item); 
+                    }
                 }
                 
                 npc.SetAllowDamage(false); // Torna o NPC Imortal

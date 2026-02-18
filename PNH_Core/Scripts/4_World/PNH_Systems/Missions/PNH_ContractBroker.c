@@ -13,27 +13,52 @@ class PNH_ContractBroker
     {
         PNH_MissionManager manager = PNH_MissionManager.GetInstance();
         PNH_BroadcastManager bManager = PNH_BroadcastManager.GetInstance();
+        
+        // Puxamos as configurações para aceder aos Textos
+        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
 
         if (!player || !player.GetIdentity() || !manager || !manager.m_ActiveMission) return;
 
-        // CORREÇÃO: Bloqueia se o jogador estiver longe do Oficial (NPC)
-        if (!PNH_IntelManager.IsPlayerNearQuestGiver(player, 3.0)) {
-            bManager.SendToPlayer(player, "[ERRO PNH] Voce precisa estar perto de um Oficial PNH para assinar o contrato!");
+        // VERIFICAÇÃO 1: Distância (Lê o texto de erro do JSON)
+        if (!PNH_IntelManager.IsPlayerNearQuestGiver(player, 10.0)) {
+            bManager.SendToPlayer(player, settings.Textos.Erro_LongeNPC);
             return;
         }
 
+        // VERIFICAÇÃO 2: Missão já tem dono (Lê o texto de erro do JSON)
         if (manager.m_ActiveMission.m_MissionAccepted) {
-            bManager.SendToPlayer(player, "PNH: Este contrato ja foi assinado por outro mercenario.");
+            bManager.SendToPlayer(player, settings.Textos.Erro_JaAssinado);
             return;
         }
 
+        // VERIFICAÇÃO 3: Patente vs Tier
+        string plainId = player.GetIdentity().GetPlainId();
+        string pName = player.GetIdentity().GetName();
+        PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(plainId, pName);
+        
+        string missionType = manager.m_ActiveMission.m_MissionType;
+        bool podeAceitar = false;
+
+        if (pData.Patente >= 1 && settings.CatalogoMissoes.Tier1_Recruta.Find(missionType) != -1) podeAceitar = true;
+        else if (pData.Patente >= 2 && settings.CatalogoMissoes.Tier2_Mercenario.Find(missionType) != -1) podeAceitar = true;
+        else if (pData.Patente >= 3 && settings.CatalogoMissoes.Tier3_Especialista.Find(missionType) != -1) podeAceitar = true;
+        else if (pData.Patente >= 4 && settings.CatalogoMissoes.Tier4_Lenda.Find(missionType) != -1) podeAceitar = true;
+
+        if (!podeAceitar) {
+            // Usa o texto do JSON, mas adicionamos a patente do jogador dinamicamente para ele saber o motivo
+            bManager.SendToPlayer(player, settings.Textos.Erro_PatenteBaixa + " (Patente Atual: " + pData.Patente + ")");
+            return;
+        }
+
+        // --- EXECUÇÃO DO CONTRATO ---
         manager.m_ActiveMission.AcceptContract(player, manager.m_ActiveMission.m_MissionTier, manager.m_ActiveMission.m_MissionType);
         
         if (manager.m_ActiveMission.DeployMission()) {
             manager.m_MissionState = 2; 
             manager.m_ActiveMission.m_MissionTime = 0;
             
-            bManager.SendToPlayer(player, "=== CONTRATO ASSINADO COM SUCESSO ===");
+            // Sucesso! Lê a frase de vitória do JSON
+            bManager.SendToPlayer(player, settings.Textos.Sucesso_Assinatura);
             
             vector pos = manager.m_ActiveMission.m_MissionPosition;
             string strCoords = "X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString();

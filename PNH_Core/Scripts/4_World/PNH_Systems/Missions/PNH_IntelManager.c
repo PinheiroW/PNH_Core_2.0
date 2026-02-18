@@ -18,7 +18,8 @@ class PNH_IntelManager
             vector playerPos = player.GetPosition();
             for (int i = 0; i < settings.NPCsQuestGivers.Count(); i++)
             {
-                PNH_MissionSettings_NPC npc = settings.NPCsQuestGivers.Get(i);
+                // CORREÇÃO: Atualizado para o novo nome da classe (PNH_NPCQuestGiver)
+                PNH_NPCQuestGiver npc = settings.NPCsQuestGivers.Get(i);
                 
                 // CORREÇÃO: Transformar o texto (string) num vector antes de calcular
                 if (vector.Distance(playerPos, npc.Posicao.ToVector()) <= maxDistance)
