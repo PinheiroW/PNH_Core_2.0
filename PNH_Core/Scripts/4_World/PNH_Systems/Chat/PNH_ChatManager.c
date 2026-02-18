@@ -14,8 +14,6 @@ class PNH_ChatManager
         string command = args.Get(0);
         command.ToLower();
 
-        PNH_MissionManager manager = PNH_MissionManager.GetInstance();
-
         // =======================================================
         // --- COMANDO: STATUS / PERFIL DO JOGADOR ---
         // =======================================================
@@ -58,52 +56,8 @@ class PNH_ChatManager
         // =======================================================
         if (command == "aceitar")
         {
-            if (!manager || !manager.m_ActiveMission)
-            {
-                PNH_Utils.SendMessage(player, "PNH: Nenhuma operacao disponivel no momento. Aguarde o radio.");
-                return true;
-            }
-
-            if (manager.m_ActiveMission.m_MissionAccepted)
-            {
-                PNH_Utils.SendMessage(player, "PNH: Este contrato ja foi assinado por outro mercenario.");
-                return true;
-            }
-
-            PNH_MissionSettingsData config = PNH_MissionSettings.GetData();
-            bool pertoDeNPC = false;
-            string npcName = "Informante";
-
-            foreach (PNH_MissionSettings_NPC npc : config.NPCsQuestGivers)
-            {
-                if (vector.Distance(player.GetPosition(), npc.Posicao.ToVector()) < 5.0)
-                {
-                    pertoDeNPC = true;
-                    npcName = npc.Nome;
-                    break;
-                }
-            }
-
-            if (!pertoDeNPC)
-            {
-                PNH_Utils.SendMessage(player, "PNH: Voce precisa estar diante de um oficial PNH para assinar o contrato.");
-                return true;
-            }
-
-            manager.m_ActiveMission.AcceptContract(player, manager.m_ActiveMission.m_MissionTier, manager.m_ActiveMission.m_MissionType);
-            
-            // PNH 2.0: O Agente de Transmissão assume o rádio e o Discord!
-            if (manager.m_ActiveMission.DeployMission())
-            {
-                PNH_BroadcastManager bManager = PNH_BroadcastManager.GetInstance();
-                
-                bManager.SendToPlayer(player, "=== CONTRATO ASSINADO COM: " + npcName + " ===");
-                bManager.SendToPlayer(player, "O seu alvo esta em: " + manager.m_ActiveMission.m_MissionLocation);
-                
-                bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, player.GetIdentity().GetName());
-                
-                bManager.SendLoreMessages(manager.m_ActiveMission);
-            }
+            // PNH 2.0: O Chat apenas repassa a ordem para o Agente Corretor.
+            PNH_ContractBroker.GetInstance().TryAcceptContract(player);
             return true;
         }
 
@@ -114,6 +68,7 @@ class PNH_ChatManager
         {
             if (PNH_CoreConfig.IsSuperAdmin(player.GetIdentity().GetPlainId()))
             {
+                PNH_MissionManager manager = PNH_MissionManager.GetInstance();
                 if (manager)
                 {
                     manager.ReloadMissions();

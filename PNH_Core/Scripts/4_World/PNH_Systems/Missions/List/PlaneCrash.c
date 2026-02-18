@@ -1,59 +1,58 @@
 class PlaneCrashMission extends PNH_MissionBase
 {
-	override bool DeployMission()
-	{
-		if (!m_MissionAccepted) return false; // TRAVA DE INICIALIZAÇÃO
+    override bool DeployMission()
+    {
+        if (!m_MissionAccepted) return false; 
+        
+        m_MissionInformant = "INTELIGÊNCIA PNH";
+        m_MissionMessage1 = "MERCENÁRIO: Um avião tático aliado foi abatido em " + m_MissionLocation + ".";
+        m_MissionMessage2 = "A carga é de altíssimo valor e as forças inimigas já estão a cercar a zona.";
+        m_MissionMessage3 = "Elimine toda a resistência pesada e recupere o setor.";
+        m_MissionMessage4 = "O Comando confia nas suas habilidades para esta operação de alto risco. Câmbio desligo.";
+        
+        // Spawn do Objeto Central (O Avião)
+        Object crash = GetGame().CreateObjectEx("Land_Wreck_C130J", m_MissionPosition, ECE_PLACE_ON_SURFACE);
+        if (crash) m_MissionObjects.Insert(crash);
 
-		m_MissionInformant = "Operador PNH";
-		m_MissionLocation = m_MissionLocation; 
-		m_MissionMessage1 = "Queda de aeronave detectada em " + m_MissionLocation;
-		m_MissionMessage2 = "A área está hostil.";
-		m_MissionMessage3 = "Recupere a caixa preta.";
-		
-		m_MissionTimeout = 2700;
-		m_MissionZoneOuterRadius = 200;
-		m_MissionZoneInnerRadius = 10;
+        // Spawn dos Inimigos (Tier 3 = Mais quantidade/dificuldade)
+        for (int i = 0; i < 20; i++)
+        {
+            vector spawnPos = m_MissionPosition + Vector(Math.RandomFloat(-15, 15), 0, Math.RandomFloat(-15, 15));
+            spawnPos[1] = GetGame().SurfaceY(spawnPos[0], spawnPos[2]); 
+            Object npc = GetGame().CreateObjectEx("ZmbM_SoldierNormal_Heavy", spawnPos, ECE_PLACE_ON_SURFACE);
+            if (npc) m_MissionAIs.Insert(npc);
+        }
 
-		Object crashSite = GetGame().CreateObjectEx("Plane_Crash_Model", m_MissionPosition, ECE_PLACE_ON_SURFACE);
-		if (crashSite) m_MissionObjects.Insert(crashSite);
+        return true;
+    }
 
-		for (int i = 0; i < 10; i++)
-		{
-			vector spawnPos = m_MissionPosition + "5 0 5".ToVector(); // CORREÇÃO VETOR
-			Object guard = GetGame().CreateObjectEx("ZmbM_SoldierNormal_Heavy", spawnPos, ECE_PLACE_ON_SURFACE);
-			if (guard) m_MissionAIs.Insert(guard);
-		}
+    override void PlayerChecks(PlayerBase player)
+    {
+        if (!m_MissionAccepted || !IsContractOwner(player)) return; 
+        if (!player || !player.IsAlive()) return;
 
-		PNH_Discord.Send("SISTEMA DE MISSÕES PNH", "[PNH_CORE] MISSÃO_INICIADA: PlaneCrash em " + m_MissionLocation);
-		return true;
-	}
+        if (vector.Distance(player.GetPosition(), m_MissionPosition) <= m_MissionZoneOuterRadius)
+        {
+            bool enemiesAlive = false;
+            foreach (Object ai : m_MissionAIs) { if (ai && EntityAI.Cast(ai).IsAlive()) { enemiesAlive = true; break; } }
+            if (!enemiesAlive) { MissionFinal(); PNH_MissionManager.GetInstance().EndMission(); }
+        }
+    }
 
-	override void PlayerChecks(PlayerBase player)
-	{
-		if (!m_MissionAccepted || !IsContractOwner(player)) return; // BLINDAGEM
-		if (!player || !player.IsAlive()) return;
+    override void MissionFinal()
+    {
+        PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName);
 
-		if (vector.Distance(player.GetPosition(), m_MissionPosition) <= m_MissionZoneInnerRadius)
-		{
-			bool enemiesLeft = false;
-			foreach (Object ai : m_MissionAIs) { if (ai && EntityAI.Cast(ai).IsAlive()) { enemiesLeft = true; break; } }
-			if (!enemiesLeft) { MissionFinal(); PNH_MissionManager.GetInstance().EndMission(); }
-		}
-	}
-
-	override void MissionFinal()
-	{
-		PNH_Utils.SendMessageToAll("[RÁDIO PNH] " + m_MissionOwnerName + " garantiu os destroços!");
-
-		if (m_MissionAccepted && m_MissionOwnerID != "")
-		{
-			PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(m_MissionOwnerID, m_MissionOwnerName);
-			PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
-			if (pData && settings) 
-			{
-				pData.TemMissaoAtiva = false; pData.ClasseMissaoAtiva = ""; PNH_ProfileManager.SaveProfile(pData);
-				PNH_ProfileManager.AddXP(PNH_Utils.GetPlayerByName(m_MissionOwnerName), settings.TabelaXP.XP_Tier_3); // RECOMPENSA
-			}
-		}
-	}
+        if (m_MissionAccepted && m_MissionOwnerID != "")
+        {
+            PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(m_MissionOwnerID, m_MissionOwnerName);
+            PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+            if (pData && settings) 
+            {
+                pData.TemMissaoAtiva = false; pData.ClasseMissaoAtiva = ""; PNH_ProfileManager.SaveProfile(pData);
+                // Atribui XP Tier 3
+                PNH_ProfileManager.AddXP(PNH_Utils.GetPlayerByName(m_MissionOwnerName), settings.TabelaXP.XP_Tier_3);
+            }
+        }
+    }
 }

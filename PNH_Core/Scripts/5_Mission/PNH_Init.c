@@ -19,6 +19,9 @@ modded class MissionServer
         // 4. Inicia o Agente de Comunicação (Rádio e Discord)
         PNH_BroadcastManager.GetInstance();
         
+        // 5. Inicia o Agente Corretor (Processamento de Contratos)
+        PNH_ContractBroker.GetInstance();
+        
         PNH_Logger.Log("Core", "[PNH_CORE] Todos os Agentes Inicializados com Sucesso.");
     }
 
