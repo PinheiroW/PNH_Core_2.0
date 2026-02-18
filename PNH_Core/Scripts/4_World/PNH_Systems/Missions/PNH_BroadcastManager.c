@@ -20,30 +20,32 @@ class PNH_BroadcastManager
         string msg = "[ALERTA PNH] Nova operacao disponivel em " + location + ". Va ate ao local para assinar o contrato!";
         BroadcastGlobal(msg);
         
-        // Delegamos o registo para o AuditManager se já estiver ativo, ou Logger como fallback
         PNH_Logger.Log("Missões", "[PNH_CORE] Sorteio realizado: " + location);
     }
 
-    void AnnounceMissionStarted(string missionType, string location, string ownerName)
+    void AnnounceMissionStarted(string missionType, string location, string coords, string ownerName, string ownerID)
     {
         string globalMsg = "[RADIO PNH] Um mercenario fechou o contrato de " + location + "!";
-        string discordMsg = "[PNH_CORE] MISSÃO INICIADA: " + missionType + " em " + location + " por " + ownerName;
+        
+        // Formato com Coordenadas e IDêntico ao teu sistema de Login
+        string discordMsg = "Jogador " + ownerName + " aceitou o contrato " + missionType + " em " + location + " [" + coords + "]. (ID: " + ownerID + ")";
         
         BroadcastGlobal(globalMsg);
         PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3066993, PNH_CoreConfig.GetMissionsURL());
     }
 
-    void AnnounceMissionEnded(string ownerName)
+    void AnnounceMissionEnded(string ownerName, string ownerID)
     {
         string globalMsg = "[RÁDIO PNH] O contrato foi concluido com sucesso por " + ownerName + "!";
-        string discordMsg = "[PNH_CORE] MISSÃO CONCLUÍDA por " + ownerName;
+        
+        // Formato IDêntico ao teu sistema de Login
+        string discordMsg = "Jogador " + ownerName + " concluiu o contrato. (ID: " + ownerID + ")";
         
         BroadcastGlobal(globalMsg);
         PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3447003, PNH_CoreConfig.GetMissionsURL());
     }
 
     // --- NOVO SISTEMA DE LORE (MENSAGEIRO PURO) ---
-    // Agora o Manager não conhece as mensagens, ele apenas as entrega com o atraso correto
     void DeliverMissionBriefing(string informant, array<string> messages)
     {
         if (!messages || messages.Count() == 0) return;

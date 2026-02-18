@@ -58,7 +58,6 @@ class PNH_MissionManager
                     }
                     else 
                     {
-                        // CORREÇÃO: Chama diretamente as verificações sem vasculhar a lista de jogadores
                         m_ActiveMission.MissionChecks(); 
                     }
                     break;
@@ -71,13 +70,27 @@ class PNH_MissionManager
         m_ActiveMission = new HordeMission(); 
         m_ActiveMission.m_MissionTier = 1;
         m_ActiveMission.m_MissionType = "Horde";
-        m_ActiveMission.m_MissionLocation = "Balota_Teste";
-        m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
+        
+        // Sorteio de posições originais
+        PNH_EventsWorldData.Init();
+        if (PNH_EventsWorldData.MissionPositions.Count() > 0)
+        {
+            int randIndex = Math.RandomInt(0, PNH_EventsWorldData.MissionPositions.Count());
+            
+            // Usando PNH_EventsWorldData.MissionEvents
+            m_ActiveMission.m_MissionLocation = PNH_EventsWorldData.MissionEvents.Get(randIndex);
+            m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(randIndex);
+        }
+        else
+        {
+            m_ActiveMission.m_MissionLocation = "Balota_Teste"; 
+            m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
+        }
 
         m_MissionState = 1; 
         
-        PNH_AuditManager.LogMissionEvent("Sistema", "Horde", "Sorteada em Balota_Teste");
-        PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable("Balota_Teste");
+        PNH_AuditManager.LogMissionEvent("Sistema", "Horde", "Sorteada em " + m_ActiveMission.m_MissionLocation);
+        PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(m_ActiveMission.m_MissionLocation);
     }
 
     void EndMission() 

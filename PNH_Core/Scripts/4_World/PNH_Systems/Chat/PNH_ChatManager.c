@@ -52,6 +52,32 @@ class PNH_ChatManager
         }
 
         // =======================================================
+        // --- NOVO COMANDO: CONSULTA DE MISSÃO ---
+        // =======================================================
+        if (command == "missao")
+        {
+            // CORREÇÃO: Nome de variável único para evitar conflito
+            PNH_MissionManager managerMissao = PNH_MissionManager.GetInstance();
+            if (managerMissao)
+            {
+                if (managerMissao.m_MissionState == 1 && managerMissao.m_ActiveMission) // Disponível
+                {
+                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Temos um contrato disponivel na regiao de: " + managerMissao.m_ActiveMission.m_MissionLocation);
+                    PNH_Utils.SendMessage(player, "Va ate ao local e use !aceitar perto do oficial.");
+                }
+                else if (managerMissao.m_MissionState >= 2) // Ativa/Materializando
+                {
+                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Ja existe um esquadrao em operacao no momento. Aguarde nova janela.");
+                }
+                else // Cooldown
+                {
+                    PNH_Utils.SendMessage(player, "[COMANDO PNH] Sem operacoes no momento. Aguardando Intel...");
+                }
+            }
+            return true;
+        }
+
+        // =======================================================
         // --- COMANDO: ACEITAR CONTRATO ---
         // =======================================================
         if (command == "aceitar")
@@ -65,16 +91,16 @@ class PNH_ChatManager
         // =======================================================
         if (command == "reload_mission")
         {
-            // PNH 2.0 FIX: Mudámos para 'adminId' para evitar o erro de Multiple Declaration
             string adminId = player.GetIdentity().GetPlainId();
             
             if (PNH_CoreConfig.IsSuperAdmin(adminId))
             {
-                PNH_MissionManager manager = PNH_MissionManager.GetInstance();
-                if (manager)
+                // CORREÇÃO: Nome de variável único para evitar conflito
+                PNH_MissionManager managerReload = PNH_MissionManager.GetInstance();
+                if (managerReload)
                 {
-                    manager.ReloadMissions();
-                    manager.ForceMissionCycle();
+                    managerReload.ReloadMissions();
+                    managerReload.ForceMissionCycle();
                     PNH_Utils.SendMessage(player, "[PNH CORE] JSON recarregado. Ciclo de missoes reiniciado.");
                 }
             }

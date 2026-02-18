@@ -1,6 +1,5 @@
 class PNH_LogisticsManager
 {
-    // Calcula uma posição aleatória segura ao redor de um ponto central
     static vector GetRandomSpawnPos(vector center, float radius)
     {
         float x = center[0] + Math.RandomFloat(-radius, radius);
@@ -10,12 +9,10 @@ class PNH_LogisticsManager
         return Vector(x, y, z);
     }
 
-    // Agente especializado em criar NPCs de forma segura
     static Object SpawnNPC(string type, vector center, float radius)
     {
         vector spawnPos = GetRandomSpawnPos(center, radius);
         
-        // PNH 2.0: Tenta criar o objeto com colisão verificada
         Object npc = GetGame().CreateObject(type, spawnPos, false, true, true);
         if (npc)
         {
@@ -23,5 +20,20 @@ class PNH_LogisticsManager
             return npc;
         }
         return null;
+    }
+
+    // Agente especializado em criar contentores de loot (Prémio)
+    static Object SpawnRewardContainer(string type, vector pos)
+    {
+        vector groundPos = pos;
+        groundPos[1] = GetGame().SurfaceY(pos[0], pos[2]);
+        
+        Object container = GetGame().CreateObject(type, groundPos, false, true, true);
+        if (container)
+        {
+            container.SetPosition(groundPos);
+            PNH_Logger.Log("Logistics", "[PNH_CORE] Recompensa materializada: " + type);
+        }
+        return container;
     }
 }

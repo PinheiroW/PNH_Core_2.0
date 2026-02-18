@@ -1,5 +1,12 @@
 class HordeMission extends PNH_MissionBase
 {
+    void HordeMission()
+    {
+        m_MissionInformant = "SGT. BASTOS";
+        m_MissionMessages.Insert("Mercenario, detectamos uma concentracao perigosa de infectados.");
+        m_MissionMessages.Insert("Limpe o perimetro estabelecido. Se tiver sucesso, um barril de suprimentos sera deixado no local.");
+    }
+
     override bool DeployMission()
     {
         if (!m_MissionAccepted) return false;
@@ -15,7 +22,6 @@ class HordeMission extends PNH_MissionBase
         return true;
     }
 
-    // CORREÇÃO: Foco absoluto no estado dos alvos, ignorando a distância do jogador
     override void MissionChecks()
     {
         if (!m_MissionAccepted || m_MissionAIs.Count() == 0) return;
@@ -39,7 +45,10 @@ class HordeMission extends PNH_MissionBase
 
     override void MissionFinal()
     {
-        PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName);
+        // Materializa o prémio físico
+        PNH_LogisticsManager.SpawnRewardContainer("Barrel_Blue", m_MissionPosition);
+
+        PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName, m_MissionOwnerID);
 
         if (m_MissionAccepted && m_MissionOwnerID != "")
         {

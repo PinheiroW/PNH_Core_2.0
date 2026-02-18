@@ -29,10 +29,18 @@ class PNH_ContractBroker
             
             bManager.SendToPlayer(player, "=== CONTRATO ASSINADO COM SUCESSO ===");
             
-            // CORREÇÃO: Utiliza o novo sistema de Lore do BroadcastManager
-            array<string> loreMsgs = new array<string>;
-            loreMsgs.Insert("O alvo foi marcado. Limpe a area.");
-            bManager.DeliverMissionBriefing("COMANDO PNH", loreMsgs);
+            // Extrai as coordenadas X e Z para uma string amigável
+            vector pos = manager.m_ActiveMission.m_MissionPosition;
+            string strCoords = "X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString();
+
+            // Dispara para o Discord com o ID Steam e Coordenadas
+            bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, strCoords, manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionOwnerID);
+            
+            // Regista as coordenadas no teu Audit Log
+            PNH_AuditManager.LogMissionEvent(manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionType, "Contrato Assinado em [" + strCoords + "]");
+            
+            // Entrega a história específica (Lore)
+            bManager.DeliverMissionBriefing(manager.m_ActiveMission.m_MissionInformant, manager.m_ActiveMission.m_MissionMessages);
         }
     }
 }

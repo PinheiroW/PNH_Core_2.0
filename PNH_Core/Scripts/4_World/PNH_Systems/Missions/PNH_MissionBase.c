@@ -14,6 +14,10 @@ class PNH_MissionBase
     
     ref array<Object> m_MissionAIs = new array<Object>;
 
+    // Sistema de Lore
+    string m_MissionInformant;
+    ref array<string> m_MissionMessages;
+
     void PNH_MissionBase()
     {
         m_MissionTime = 0;
@@ -21,6 +25,9 @@ class PNH_MissionBase
         m_MissionZoneOuterRadius = 200.0;
         m_MissionAccepted = false;
         m_MissionOwnerID = "";
+        
+        m_MissionInformant = "COMANDO PNH";
+        m_MissionMessages = new array<string>;
     }
 
     void AcceptContract(PlayerBase player, int tier, string missionName)
@@ -41,8 +48,6 @@ class PNH_MissionBase
 
     bool DeployMission() { return true; }
     void MissionFinal() {}
-    
-    // CORREÇÃO: Função base renomeada e sem argumentos
     void MissionChecks() {}
 
     void CleanUp()

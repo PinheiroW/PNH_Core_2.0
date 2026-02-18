@@ -13,12 +13,6 @@ class PNH_EventsWorldData
         if (MissionEvents.Count() > 0) return; // Evita carregar duas vezes
 
         // =========================================================================
-        // --- COORDENADA DE TESTE (Alterada para Balota - Local Plano) ---
-        // =========================================================================
-        MissionEvents.Insert("Horde Balota_Teste"); 
-        MissionPositions.Insert("4400.5 7.3 2517.7".ToVector());
-
-        // =========================================================================
         // --- LISTA DE MISSÕES (Corrigidas com .ToVector()) ---
         // =========================================================================
         
