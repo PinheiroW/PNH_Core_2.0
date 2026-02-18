@@ -5,6 +5,7 @@ class HordeMission extends PNH_MissionBase
         if (!m_MissionAccepted) return false;
         m_MissionAIs.Clear();
 
+        // Spawn de 15 soldados infectados
         for (int i = 0; i < 15; i++)
         {
             vector spawnPos = m_MissionPosition + Vector(Math.RandomFloat(-10, 10), 0, Math.RandomFloat(-10, 10));
@@ -22,11 +23,15 @@ class HordeMission extends PNH_MissionBase
 
     override void PlayerChecks(PlayerBase player)
     {
+        // O Manager só permite esta verificação após 15s de materialização
         if (!m_MissionAccepted || !IsContractOwner(player) || m_MissionAIs.Count() == 0) return;
 
         bool zombiesAlive = false;
         foreach (Object ai : m_MissionAIs) {
-            if (ai && EntityAI.Cast(ai).IsAlive()) { zombiesAlive = true; break; }
+            if (ai && EntityAI.Cast(ai).IsAlive()) { 
+                zombiesAlive = true; 
+                break; 
+            }
         }
 
         if (!zombiesAlive) {
@@ -37,27 +42,13 @@ class HordeMission extends PNH_MissionBase
 
     override void MissionFinal()
     {
-        // Anúncio de rádio/global
+        // 1. O rádio/Discord anuncia a conclusão
         PNH_BroadcastManager.GetInstance().AnnounceMissionEnded(m_MissionOwnerName);
 
+        // 2. A Tesouraria processa o pagamento usando os dados do contrato
         if (m_MissionAccepted && m_MissionOwnerID != "")
         {
-            PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(m_MissionOwnerID, m_MissionOwnerName);
-            PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
-            
-            if (pData && settings) 
-            {
-                pData.TemMissaoAtiva = false; 
-                pData.ClasseMissaoAtiva = ""; 
-                
-                // PNH 2.0 FIX: Adiciona o XP diretamente ao perfil antes de salvar
-                pData.XP += settings.TabelaXP.XP_Tier_1; 
-                PNH_ProfileManager.SaveProfile(pData);
-                
-                // Feedback imediato no chat para o jogador
-                PlayerBase player = PNH_Utils.GetPlayerBySteamID(m_MissionOwnerID);
-                if (player) PNH_Utils.SendMessage(player, "[PNH] Contrato Concluido! +" + settings.TabelaXP.XP_Tier_1 + " XP obtido.");
-            }
+            PNH_TreasuryManager.ProcessMissionReward(m_MissionOwnerID, m_MissionOwnerName, m_MissionTier);
         }
     }
 }
