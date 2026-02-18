@@ -1,6 +1,5 @@
 class PNH_IntelManager
 {
-    // CORREÇÃO: Função otimizada para receber o PlayerBase direto, poupando CPU
     static bool IsPlayerInZone(PlayerBase player, vector zonePos, float radius)
     {
         if (!player) return false;
@@ -8,7 +7,29 @@ class PNH_IntelManager
         return (distance <= radius);
     }
 
-    // Função para detetar qualquer jogador próximo (útil para emboscadas ou eventos)
+    // Verifica se o jogador está a menos de 3 metros de um Oficial PNH
+    static bool IsPlayerNearQuestGiver(PlayerBase player, float maxDistance = 3.0)
+    {
+        if (!player) return false;
+        
+        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+        if (settings && settings.NPCsQuestGivers)
+        {
+            vector playerPos = player.GetPosition();
+            for (int i = 0; i < settings.NPCsQuestGivers.Count(); i++)
+            {
+                PNH_MissionSettings_NPC npc = settings.NPCsQuestGivers.Get(i);
+                
+                // CORREÇÃO: Transformar o texto (string) num vector antes de calcular
+                if (vector.Distance(playerPos, npc.Posicao.ToVector()) <= maxDistance)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     static array<PlayerBase> GetPlayersInRadius(vector center, float radius)
     {
         array<PlayerBase> playersNear = new array<PlayerBase>;

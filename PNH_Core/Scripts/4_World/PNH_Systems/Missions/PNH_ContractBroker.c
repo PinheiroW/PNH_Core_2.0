@@ -16,6 +16,12 @@ class PNH_ContractBroker
 
         if (!player || !player.GetIdentity() || !manager || !manager.m_ActiveMission) return;
 
+        // CORREÇÃO: Bloqueia se o jogador estiver longe do Oficial (NPC)
+        if (!PNH_IntelManager.IsPlayerNearQuestGiver(player, 3.0)) {
+            bManager.SendToPlayer(player, "[ERRO PNH] Voce precisa estar perto de um Oficial PNH para assinar o contrato!");
+            return;
+        }
+
         if (manager.m_ActiveMission.m_MissionAccepted) {
             bManager.SendToPlayer(player, "PNH: Este contrato ja foi assinado por outro mercenario.");
             return;
@@ -29,17 +35,13 @@ class PNH_ContractBroker
             
             bManager.SendToPlayer(player, "=== CONTRATO ASSINADO COM SUCESSO ===");
             
-            // Extrai as coordenadas X e Z para uma string amigável
             vector pos = manager.m_ActiveMission.m_MissionPosition;
             string strCoords = "X: " + Math.Round(pos[0]).ToString() + ", Z: " + Math.Round(pos[2]).ToString();
 
-            // Dispara para o Discord com o ID Steam e Coordenadas
             bManager.AnnounceMissionStarted(manager.m_ActiveMission.m_MissionType, manager.m_ActiveMission.m_MissionLocation, strCoords, manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionOwnerID);
             
-            // Regista as coordenadas no teu Audit Log
             PNH_AuditManager.LogMissionEvent(manager.m_ActiveMission.m_MissionOwnerName, manager.m_ActiveMission.m_MissionType, "Contrato Assinado em [" + strCoords + "]");
             
-            // Entrega a história específica (Lore)
             bManager.DeliverMissionBriefing(manager.m_ActiveMission.m_MissionInformant, manager.m_ActiveMission.m_MissionMessages);
         }
     }

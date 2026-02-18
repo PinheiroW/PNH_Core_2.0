@@ -10,57 +10,92 @@ class PNH_BroadcastManager
         return m_Instance;
     }
 
-    // --- CANAIS DE SAÍDA PUROS ---
+    // --- CANAIS DE SAÍDA BÁSICOS ---
     void BroadcastGlobal(string message) { PNH_Utils.SendMessageToAll(message); }
     void SendToPlayer(PlayerBase player, string message) { if (player) PNH_Utils.SendMessage(player, message); }
 
-    // --- ANÚNCIOS TÁTICOS (Rádio + Discord + Audit) ---
+    // =======================================================
+    // --- NOTIFICAÇÕES NATIVAS DO DAYZ (COM ÍCONES) ---
+    // =======================================================
+    
+    // NOVO: Adicionei o parâmetro "icon" para podermos escolher a imagem!
+    void BroadcastNotification(string title, string text, float time = 5.0, string icon = "Notifications/gui/data/info.edds")
+    {
+        array<Man> players = new array<Man>;
+        GetGame().GetPlayers(players);
+        
+        for (int i = 0; i < players.Count(); i++)
+        {
+            PlayerBase p = PlayerBase.Cast(players.Get(i));
+            if (p && p.GetIdentity())
+            {
+                // Agora o último parâmetro recebe a variável 'icon'
+                NotificationSystem.SendNotificationToPlayerIdentityExtended(p.GetIdentity(), time, title, text, icon);
+            }
+        }
+    }
+
+    void SendNotificationToPlayer(PlayerBase player, string title, string text, float time = 5.0, string icon = "Notifications/gui/data/info.edds")
+    {
+        if (player && player.GetIdentity())
+        {
+            // Agora o último parâmetro recebe a variável 'icon'
+            NotificationSystem.SendNotificationToPlayerIdentityExtended(player.GetIdentity(), time, title, text, icon);
+        }
+    }
+
+    // --- ANÚNCIOS TÁTICOS ---
     void AnnounceMissionAvailable(string location)
     {
-        string msg = "[ALERTA PNH] Nova operacao disponivel em " + location + ". Va ate ao local para assinar o contrato!";
-        BroadcastGlobal(msg);
+        string msg = "Nova operacao disponivel em " + location + ". Va ate ao local assinar o contrato!";
         
+        // Usa o ícone de AVISO (Warning) para chamar a atenção
+        BroadcastNotification("ALERTA PNH", msg, 7.0, "Notifications/gui/data/warning.edds"); 
+        
+        BroadcastGlobal("[ALERTA PNH] " + msg);        
         PNH_Logger.Log("Missões", "[PNH_CORE] Sorteio realizado: " + location);
     }
 
     void AnnounceMissionStarted(string missionType, string location, string coords, string ownerName, string ownerID)
     {
-        string globalMsg = "[RADIO PNH] Um mercenario fechou o contrato de " + location + "!";
-        
-        // Formato com Coordenadas e IDêntico ao teu sistema de Login
+        string telaMsg = "Um mercenario fechou o contrato de " + location + "!";
         string discordMsg = "Jogador " + ownerName + " aceitou o contrato " + missionType + " em " + location + " [" + coords + "]. (ID: " + ownerID + ")";
         
-        BroadcastGlobal(globalMsg);
+        // Usa o ícone de INFORMAÇÃO padrão
+        BroadcastNotification("RADIO PNH", telaMsg, 5.0); 
+        
+        BroadcastGlobal("[RADIO PNH] " + telaMsg);
         PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3066993, PNH_CoreConfig.GetMissionsURL());
     }
 
     void AnnounceMissionEnded(string ownerName, string ownerID)
     {
-        string globalMsg = "[RÁDIO PNH] O contrato foi concluido com sucesso por " + ownerName + "!";
-        
-        // Formato IDêntico ao teu sistema de Login
+        string telaMsg = "O contrato foi concluido com sucesso por " + ownerName + "!";
         string discordMsg = "Jogador " + ownerName + " concluiu o contrato. (ID: " + ownerID + ")";
         
-        BroadcastGlobal(globalMsg);
+        // Usa o ícone de INFORMAÇÃO padrão
+        BroadcastNotification("RADIO PNH", telaMsg, 5.0); 
+        
+        BroadcastGlobal("[RADIO PNH] " + telaMsg);
         PNH_Discord.Send("SISTEMA DE MISSÕES PNH", discordMsg, 3447003, PNH_CoreConfig.GetMissionsURL());
     }
 
-    // --- NOVO SISTEMA DE LORE (MENSAGEIRO PURO) ---
+    // --- SISTEMA DE LORE ---
     void DeliverMissionBriefing(string informant, array<string> messages)
     {
         if (!messages || messages.Count() == 0) return;
-
-        string tag = "[" + informant + "] ";
-        
         for (int i = 0; i < messages.Count(); i++)
         {
             string msg = messages.Get(i);
             if (msg == "") continue;
-
-            // Escalonamento de mensagens: 0s, 3s, 6s, 9s...
-            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedMessage, (i * 3000), false, tag + msg);
+            GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.DelayedNotification, (i * 5500), false, informant, msg);
         }
     }
 
-    private void DelayedMessage(string msg) { BroadcastGlobal(msg); }
+    private void DelayedNotification(string title, string msg) 
+    { 
+        // Usa o ícone de INFORMAÇÃO padrão
+        BroadcastNotification(title, msg, 5.0); 
+        BroadcastGlobal("[" + title + "] " + msg); 
+    }
 }

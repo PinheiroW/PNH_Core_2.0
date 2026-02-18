@@ -35,10 +35,8 @@ class PNH_MissionManager
                     m_CooldownTimer -= 2; 
                     if (m_CooldownTimer <= 0) StartRandomMission(); 
                     break;
-
                 case 1: // DISPONÍVEL
                     break;
-
                 case 2: // MATERIALIZANDO
                     m_ActiveMission.m_MissionTime += 2;
                     if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, 15)) 
@@ -47,10 +45,8 @@ class PNH_MissionManager
                         PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Vigilancia Ativada");
                     }
                     break;
-
                 case 3: // ATIVA
                     m_ActiveMission.m_MissionTime += 2;
-                    
                     if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, m_ActiveMission.m_MissionTimeout)) 
                     {
                         PNH_AuditManager.LogMissionEvent(m_ActiveMission.m_MissionOwnerName, m_ActiveMission.m_MissionType, "Falhou por Tempo");
@@ -71,19 +67,31 @@ class PNH_MissionManager
         m_ActiveMission.m_MissionTier = 1;
         m_ActiveMission.m_MissionType = "Horde";
         
-        // Sorteio de posições originais
         PNH_EventsWorldData.Init();
-        if (PNH_EventsWorldData.MissionPositions.Count() > 0)
+        
+        // CORREÇÃO: Filtra para escolher APENAS missões da "Horde"
+        array<int> validIndexes = new array<int>;
+        for (int i = 0; i < PNH_EventsWorldData.MissionEvents.Count(); i++)
         {
-            int randIndex = Math.RandomInt(0, PNH_EventsWorldData.MissionPositions.Count());
+            string eventName = PNH_EventsWorldData.MissionEvents.Get(i);
+            if (eventName.Contains("Horde")) // Apenas palavras contendo Horde
+            {
+                validIndexes.Insert(i);
+            }
+        }
+
+        if (validIndexes.Count() > 0)
+        {
+            // Sorteia um índice válido do nosso filtro
+            int randPos = Math.RandomInt(0, validIndexes.Count());
+            int randIndex = validIndexes.Get(randPos);
             
-            // Usando PNH_EventsWorldData.MissionEvents
             m_ActiveMission.m_MissionLocation = PNH_EventsWorldData.MissionEvents.Get(randIndex);
             m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(randIndex);
         }
         else
         {
-            m_ActiveMission.m_MissionLocation = "Balota_Teste"; 
+            m_ActiveMission.m_MissionLocation = "Horde Balota_Teste"; 
             m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
         }
 

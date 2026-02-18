@@ -52,27 +52,69 @@ class PNH_ChatManager
         }
 
         // =======================================================
-        // --- NOVO COMANDO: CONSULTA DE MISSÃO ---
+        // --- COMANDO: CONSULTA DE MISSÃO GERAL ---
         // =======================================================
         if (command == "missao")
         {
-            // CORREÇÃO: Nome de variável único para evitar conflito
             PNH_MissionManager managerMissao = PNH_MissionManager.GetInstance();
             if (managerMissao)
             {
-                if (managerMissao.m_MissionState == 1 && managerMissao.m_ActiveMission) // Disponível
+                if (managerMissao.m_MissionState == 1 && managerMissao.m_ActiveMission)
                 {
                     PNH_Utils.SendMessage(player, "[COMANDO PNH] Temos um contrato disponivel na regiao de: " + managerMissao.m_ActiveMission.m_MissionLocation);
                     PNH_Utils.SendMessage(player, "Va ate ao local e use !aceitar perto do oficial.");
                 }
-                else if (managerMissao.m_MissionState >= 2) // Ativa/Materializando
+                else if (managerMissao.m_MissionState >= 2)
                 {
                     PNH_Utils.SendMessage(player, "[COMANDO PNH] Ja existe um esquadrao em operacao no momento. Aguarde nova janela.");
                 }
-                else // Cooldown
+                else
                 {
                     PNH_Utils.SendMessage(player, "[COMANDO PNH] Sem operacoes no momento. Aguardando Intel...");
                 }
+            }
+            return true;
+        }
+
+        // =======================================================
+        // --- NOVO COMANDO: RESUMO DA MISSÃO (EXCLUSIVO DO DONO) ---
+        // =======================================================
+        if (command == "resumo")
+        {
+            PNH_MissionManager mngrResumo = PNH_MissionManager.GetInstance();
+            if (mngrResumo && mngrResumo.m_MissionState >= 2 && mngrResumo.m_ActiveMission)
+            {
+                if (mngrResumo.m_ActiveMission.IsContractOwner(player))
+                {
+                    // CORREÇÃO: Converte o tempo para Inteiro (int) antes de usar o Módulo (%)
+                    int timeLeftInt = (int)(mngrResumo.m_ActiveMission.m_MissionTimeout - mngrResumo.m_ActiveMission.m_MissionTime);
+                    int minutes = timeLeftInt / 60;
+                    int seconds = timeLeftInt % 60;
+                    string timeStr = minutes.ToStringLen(2) + ":" + seconds.ToStringLen(2);
+
+                    string loc = mngrResumo.m_ActiveMission.m_MissionLocation;
+
+                    // Envia um Popup na Tela usando a nossa nova função
+                    PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(player, "OBJETIVO ATUAL", "Alvo: " + loc + "\nTempo Restante: " + timeStr, 10.0);
+
+                    // Imprime a História no Chat
+                    PNH_Utils.SendMessage(player, "=== INTEL DA MISSÃO ===");
+                    PNH_Utils.SendMessage(player, "Alvo: " + loc);
+                    PNH_Utils.SendMessage(player, "Informante: " + mngrResumo.m_ActiveMission.m_MissionInformant);
+                    for (int i = 0; i < mngrResumo.m_ActiveMission.m_MissionMessages.Count(); i++)
+                    {
+                        PNH_Utils.SendMessage(player, "- " + mngrResumo.m_ActiveMission.m_MissionMessages.Get(i));
+                    }
+                    PNH_Utils.SendMessage(player, "=======================");
+                }
+                else
+                {
+                    PNH_Utils.SendMessage(player, "[ERRO] Voce nao possui o contrato ativo desta missao.");
+                }
+            }
+            else
+            {
+                PNH_Utils.SendMessage(player, "[ERRO] Nenhuma missao ativa no momento.");
             }
             return true;
         }
@@ -92,10 +134,8 @@ class PNH_ChatManager
         if (command == "reload_mission")
         {
             string adminId = player.GetIdentity().GetPlainId();
-            
             if (PNH_CoreConfig.IsSuperAdmin(adminId))
             {
-                // CORREÇÃO: Nome de variável único para evitar conflito
                 PNH_MissionManager managerReload = PNH_MissionManager.GetInstance();
                 if (managerReload)
                 {
