@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_Init.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Orquestrar o arranque completo do mod no lado do servidor, carregando configurações, inicializando as instâncias dos Managers e spawnando os NPCs Oficiais no mapa.
+/// Comunicação com outros arquivos: Invoca o carregamento do PNH_CoreConfig.c e PNH_MissionSettings.c, ativa o batimento cardíaco do PNH_MissionManager.c via OnUpdate e coordena o spawn inicial com o PNH_NPCManager.c.
+/// Motivo da existência no sistema: Garantir que todos os componentes do mod sejam inicializados na ordem correta (Config -> Managers -> Mundo) assim que a missão do servidor começa.
+/// Dependências internas: Praticamente todos os Managers e arquivos de configuração do Core (Logger, CoreConfig, MissionSettings, MissionManager, BroadcastManager, ContractBroker, NPCManager, AuditManager e ProfileManager).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 modded class MissionServer
 {
     override void OnInit()

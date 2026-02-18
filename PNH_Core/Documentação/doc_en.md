@@ -1,1 +1,0 @@
-Full English documentation for PNH_Core 2.0.

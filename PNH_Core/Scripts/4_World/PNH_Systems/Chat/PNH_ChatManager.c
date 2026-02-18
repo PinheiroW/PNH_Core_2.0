@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_ChatManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Processar, validar e executar comandos de texto enviados pelos jogadores no chat (como !status, !missao, !resumo, !aceitar e !reload_mission).
+/// Comunicação com outros arquivos: Interage com o PNH_ProfileManager (Utils.c) para exibir perfis, PNH_MissionManager.c para consultar o estado das missões, PNH_ContractBroker.c para assinatura de contratos e PNH_BroadcastManager.c para disparar notificações visuais na tela.
+/// Motivo da existência do arquivo no sistema: Atuar como a interface de comando e controlo (UI via Chat) entre o utilizador e o ecossistema de missões do PNH_Core.
+/// Dependências internas: PNH_Utils.c (mensagens e perfis), PNH_MissionSettings.c (dados de XP/Patente), PNH_MissionManager.c (estado global) e PNH_CoreConfig.c (validação de SuperAdmins).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_ChatManager
 {
     static bool HandleCommand(PlayerBase player, string message)

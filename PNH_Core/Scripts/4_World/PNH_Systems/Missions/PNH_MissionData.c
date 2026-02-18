@@ -1,6 +1,11 @@
-// =======================================================
-// --- ESTRUTURA DE DADOS PNH CORE 2.0 (MODULAR) ---
-// =======================================================
+/// --- Documentação PNH_Core: PNH_MissionData.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Definir as classes de dados e modelos (Data Models) que estruturam o ficheiro de configuração PNH_MissionSettings.json, incluindo as definições para Tiers, Loot, NPCs, Tabela de XP e os Textos de Interface customizáveis.
+/// Comunicação com outros arquivos: Serve como o "esqueleto" de dados utilizado pelo PNH_MissionSettings.c para carregar as configurações e por todos os Managers que precisam de ler regras ou tabelas de loot do JSON.
+/// Motivo da existência: Isolar a definição da estrutura de dados da lógica de processamento, permitindo expandir o mod (como adicionar novos parâmetros no JSON) de forma organizada e sem quebrar a lógica dos scripts.
+/// Dependências internas: Nenhuma.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
 class PNH_DebugSettings {
     bool DebugMode;

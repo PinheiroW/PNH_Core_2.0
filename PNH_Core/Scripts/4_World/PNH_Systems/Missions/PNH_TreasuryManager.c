@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_TreasuryManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Gerir a atribuição de recompensas intangíveis (XP) aos jogadores, processando a liquidação de contratos e atualizando o estado de missão no perfil do mercenário.
+/// Comunicação com outros arquivos: É chamado pelas classes de missão (ex: Horde.c) no momento da conclusão da operação para pagar o mercenário.
+/// Motivo da existência no sistema: Isolar a lógica financeira e de progressão, garantindo que a recompensa de XP seja aplicada de forma segura e registada nos logs.
+/// Dependências internas: PNH_ProfileManager (Utils.c) para manipulação de dados do jogador e PNH_MissionSettings.c para consulta da tabela de XP por Tier.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_TreasuryManager
 {
     // Função estática: pode ser chamada de qualquer lugar sem precisar instanciar

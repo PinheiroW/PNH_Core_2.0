@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_BroadcastManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Centralizar e gerir o envio de notificações globais e individuais, utilizando o sistema nativo de pop-ups do DayZ (com ícones customizáveis), mensagens de chat e anúncios táticos de rádio para o início e fim de missões.
+/// Comunicação com outros arquivos: É invocado pelo PNH_MissionManager.c para anunciar a disponibilidade de missões, pelo PNH_ContractBroker.c para confirmar assinaturas de contratos e pelas missões específicas (como Horde.c) para entregar briefings de lore via rádio.
+/// Motivo da existência do arquivo no sistema: Desacoplar a lógica de interface (UI/Notificações) da lógica de jogo, permitindo que as mensagens sejam enviadas de forma assíncrona (com atrasos controlados para simular rádio) sem bloquear a execução de outros sistemas.
+/// Dependências internas: PNH_Utils.c (para mensagens de chat), PNH_Discord.c (para espelhamento de anúncios no Discord) e PNH_CoreConfig.c (para obtenção de URLs de webhooks).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_BroadcastManager
 {
     static ref PNH_BroadcastManager m_Instance;

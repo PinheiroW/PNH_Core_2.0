@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_NPCManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Controlar o spawn persistente dos Oficiais PNH (Quest Givers) no mapa, gerindo o seu vestuário, imortalidade e garantindo que não existam duplicatas após recarregamentos de configuração.
+/// Comunicação com outros arquivos: É invocado pelo PNH_Init.c no arranque do servidor para povoar o mapa com os Oficiais e pelo PNH_ChatManager.c através do comando !reload_mission para atualizar as posições dos NPCs.
+/// Motivo da existência no sistema: Automatizar a presença dos Oficiais no mundo de jogo com base no JSON, eliminando a necessidade de colocar NPCs manualmente via Editor.
+/// Dependências internas: PNH_MissionSettings.c (para ler as coordenadas, nomes e roupas dos NPCs) e PNH_Logger.c para reportar o sucesso do spawn.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_NPCManager
 {
     static ref PNH_NPCManager m_Instance;

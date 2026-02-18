@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_AutoBroadcast.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+//[cite_start]/// Função do arquivo: Gerir o sistema de mensagens automáticas periódicas do servidor, lendo uma lista de frases e enviando-as globalmente num intervalo definido[cite: 31].
+//[cite_start]/// Comunicação com outros arquivos: Lê a lista de mensagens e o intervalo de tempo do PNH_CoreConfig.c e utiliza o PNH_Utils.c para disparar a mensagem para todos os jogadores[cite: 31].
+/// Motivo da existência no sistema: Automatizar avisos de regras, dicas de jogo ou boas-vindas, mantendo os jogadores informados de forma cíclica.
+//[cite_start]/// Dependências internas: PNH_CoreConfig.c (definições de mensagens e tempo) e PNH_Utils.c (função de envio global)[cite: 31].
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 modded class MissionServer
 {
     private float m_PNH_BroadcastTimer;

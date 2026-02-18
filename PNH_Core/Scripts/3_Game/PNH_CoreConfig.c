@@ -1,6 +1,10 @@
-/* MOD: PNH_Core 2.4
-   DESC: Configuração Global com Getters Refatorados para evitar erro de compilação
-*/
+/// --- Documentação PNH_Core: PNH_CoreConfig.c ---
+/// Função do arquivo: Gere o carregamento, salvamento e acesso às configurações globais do Core, como URLs de Webhooks do Discord, mensagens de broadcast automático e a lista de Super Admins através de um ficheiro JSON.
+//[cite_start]/// Comunicação com outros arquivos: Fornece as URLs necessárias para o PNH_Discord.c e PNH_Logger.c, valida permissões administrativas para o PNH_ChatHook.c e é invocado para inicialização no PNH_Init.c[cite: 13, 14, 15, 23, 24].
+/// Motivo da existência do arquivo no sistema: Centralizar dados sensíveis e variáveis de infraestrutura num ficheiro externo, permitindo que donos de servidores configurem o mod sem necessidade de alterar o código-fonte.
+/// Dependências internas: PNH_Consts.c (para definição de prefixos e caminhos de diretórios).
+/// Última atualização: 2026-02-18
+/// Sempre que alterar ou documentar um arquivo, atualize também o arquivo CHANGELOG_PNH
 
 class PNH_CoreSettings
 {

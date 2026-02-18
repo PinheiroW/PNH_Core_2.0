@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_ContractBroker.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Gerir toda a lógica de validação e assinatura física de contratos, verificando a proximidade do jogador com o NPC Oficial, a disponibilidade da missão e se a patente do mercenário é compatível com o Tier exigido.
+/// Comunicação com outros arquivos: Comunica com o PNH_IntelManager.c para validação de distância, PNH_ProfileManager (Utils.c) para verificação de patentes, PNH_MissionManager.c para ativação da missão e PNH_BroadcastManager.c para anunciar o início da operação.
+/// Motivo da existência do arquivo no sistema: Isolar a lógica complexa de "venda" e validação de contratos, garantindo que o sistema de chat e o gestor de missões permaneçam limpos e focados apenas nas suas funções primárias.
+/// Dependências internas: PNH_MissionManager.c (estado da missão), PNH_BroadcastManager.c (notificações), PNH_MissionSettings.c (textos e tiers), PNH_IntelManager.c (distâncias), PNH_ProfileManager (dados de patente) e PNH_AuditManager.c (registo de eventos).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_ContractBroker
 {
     static ref PNH_ContractBroker m_Instance;

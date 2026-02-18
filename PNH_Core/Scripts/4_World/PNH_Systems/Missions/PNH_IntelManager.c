@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_IntelManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Centralizar as verificações de geolocalização e proximidade, validando se um jogador está dentro de raios específicos de missão ou perto de Oficiais NPCs para interação.
+/// Comunicação com outros arquivos: Providencia dados de validação cruciais para o PNH_ContractBroker.c (aceitação de contrato) e para as classes de missão que monitorizam a entrada de jogadores em áreas de operação.
+/// Motivo da existência no sistema: Isolar a lógica matemática de cálculos de distância (vector.Distance), garantindo que as regras de "perto/longe" sejam consistentes em todo o mod.
+/// Dependências internas: PNH_MissionSettings.c (para obter as coordenadas dos NPCs registados no JSON).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_IntelManager
 {
     static bool IsPlayerInZone(PlayerBase player, vector zonePos, float radius)

@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_Utils.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+///[cite_start]/// Função do arquivo: Centralizar funções utilitárias estáticas para envio de mensagens (individuais e globais) e busca de jogadores, além de conter a implementação completa do sistema de perfis (PNH_PlayerProfileData) e o gestor de perfis (PNH_ProfileManager) que controla o XP e as Patentes[cite: 31].
+///[cite_start]/// Comunicação com outros arquivos: É o ficheiro com maior rede de comunicação do mod, sendo invocado pelo PNH_ChatManager.c para comandos de perfil, pelo PNH_TreasuryManager.c para atribuição de recompensas e pelo PNH_Init.c para carregar dados ao conectar jogadores[cite: 21, 28, 30].
+///[cite_start]/// Motivo da existência: Garantir que a persistência de progresso dos mercenários (XP e Patente) seja feita de forma padronizada via JSON e fornecer ferramentas de ajuda que simplificam o código nos outros Managers[cite: 31].
+///[cite_start]/// Dependências internas: PNH_MissionSettings.c (necessário para o PNH_ProfileManager consultar a TabelaXP e validar subidas de patente)[cite: 31].
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_Utils
 {
     // --- NOVA FUNÇÃO: Enviar para TODOS ---

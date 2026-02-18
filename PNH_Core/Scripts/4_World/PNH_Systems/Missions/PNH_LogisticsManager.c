@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_LogisticsManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Gerir a materialização física de objetos no mundo, incluindo o cálculo de posições aleatórias de spawn, criação de NPCs inimigos e a geração inteligente de loot em contentores (barris) com base em probabilidades (RNG) e limites de quantidade definidos no JSON.
+/// Comunicação com outros arquivos: É invocado pelas missões específicas (ex: Horde.c) para o spawn de inimigos e loot, e pelo PNH_MissionManager.c para rotinas de limpeza de objetos.
+/// Motivo da existência: Centralizar a lógica de spawn e a "roleta" de loot, garantindo que as recompensas físicas das missões sejam distribuídas corretamente de acordo com o Tier da operação.
+/// Dependências internas: PNH_MissionSettings.c (para ler tabelas de loot e limites) e PNH_Logger.c (para registo de auditoria de spawns).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_LogisticsManager
 {
     static vector GetRandomSpawnPos(vector center, float radius)

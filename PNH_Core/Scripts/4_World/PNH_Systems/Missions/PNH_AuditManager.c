@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_AuditManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Responsável por registar eventos críticos de jogabilidade e ações administrativas, formatando mensagens com carimbos de data/hora (timestamps) detalhados para auditoria interna.
+/// Comunicação com outros arquivos: Recebe solicitações de log do PNH_MissionManager.c (ciclos de missão), PNH_ContractBroker.c (assinaturas de contratos) e PNH_ChatManager.c (comandos administrativos).
+/// Motivo da existência no sistema: Garantir a transparência e rastreabilidade de todas as atividades importantes do mod, permitindo aos administradores verificar o histórico de missões e o uso de comandos.
+/// Dependências internas: PNH_Logger.c (para gravação física dos logs) e funções nativas de tempo do DayZ (GetYearMonthDay/GetHourMinuteSecond).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_AuditManager
 {
     // Regista ações importantes (Aceitação, Conclusão, Morte em missão)

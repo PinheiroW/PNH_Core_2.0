@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_MissionManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Atuar como o motor central do sistema de missões, gerindo o ciclo de vida completo (IDLE, Disponível, Materializando e Ativa), controlando os timers de cooldown e realizando o sorteio aleatório de novas missões e coordenadas.
+/// Comunicação com outros arquivos: Recebe batimento cardíaco (OnUpdate) do PNH_Init.c, utiliza o PNH_EventsWorldData.c para obter coordenadas, instancia classes de missão (como HordeMission), reporta eventos ao PNH_AuditManager.c e solicita anúncios ao PNH_BroadcastManager.c.
+/// Motivo da existência do arquivo no sistema: Centralizar a máquina de estados das missões do servidor, garantindo que o fluxo de sorteio, execução e limpeza ocorra de forma automática e organizada.
+/// Dependências internas: PNH_MissionSettings.c (carregamento de configs), PNH_EventsWorldData.c (base de dados de locais), PNH_AuditManager.c (registos) e PNH_TimeManager.c (controlo de tempo).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_MissionManager
 {
     static ref PNH_MissionManager m_Instance; 

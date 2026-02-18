@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_Discord.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Responsável pela integração externa com o Discord, enviando mensagens formatadas (Embeds) via Webhooks através da API Rest do framework Dabs.
+/// Comunicação com outros arquivos: É utilizado pelo PNH_Logger.c para logs críticos, pelo PNH_BroadcastManager.c para anúncios de missões e pelos ficheiros de Hook (Chat e Conexão) na camada 5_Mission.
+/// Motivo da existência: Permitir a monitorização em tempo real das atividades do servidor (logs, chat e missões) fora do ambiente de jogo.
+/// Dependências internas: PNH_CoreConfig.c (para obtenção das URLs padrão) e o módulo JM_CF_Scripts no config.cpp.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_Discord
 {
     // Agora aceita URL opcional.

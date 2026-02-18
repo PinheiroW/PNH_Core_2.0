@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_MissionSettings.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Gerir o ciclo de vida do ficheiro de configuração PNH_MissionSettings.json, sendo responsável por criar o ficheiro padrão com loot e textos customizáveis, carregar os dados para a memória e permitir o recarregamento (reload) das definições.
+/// Comunicação com outros arquivos: Providencia o método GetData() que é utilizado por quase todos os sistemas (Treasury, Logistics, ContractBroker, ChatManager) para aceder às regras definidas no JSON.
+/// Motivo da existência no sistema: Permitir que o comportamento das missões (loot, XP, textos e temporizadores) seja alterado de forma dinâmica sem necessidade de recompilar o mod.
+/// Dependências internas: PNH_MissionData.c (que define a estrutura de classes que este ficheiro preenche) e PNH_Logger.c para reportar o sucesso ou falha no processamento do JSON.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_MissionSettings
 {
     protected static string m_ConfigRoot = "$profile:\\PNH\\";

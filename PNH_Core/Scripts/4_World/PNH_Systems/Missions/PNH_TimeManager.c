@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_TimeManager.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Fornecer ferramentas de manipulação de tempo, incluindo a conversão de minutos para segundos, validação de intervalos decorridos e a formatação de segundos em strings legíveis (MM:SS) para o rádio ou interface.
+/// Comunicação com outros arquivos: É utilizado pelo PNH_MissionManager.c para calcular o tempo de conclusão de missões e pelo PNH_ChatManager.c para exibir o tempo restante no comando !resumo.
+/// Motivo da existência no sistema: Centralizar a lógica matemática de tempo, evitando cálculos manuais e inconsistentes em diferentes partes do código.
+/// Dependências internas: Nenhuma.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_TimeManager
 {
     // Função para converter minutos em segundos (útil para as configs)

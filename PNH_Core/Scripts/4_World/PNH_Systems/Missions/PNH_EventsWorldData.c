@@ -1,8 +1,12 @@
-/*
-    MOD: PNH_Core 2.0
-    SCRIPT: PNH_EventsWorldData.c (4_World)
-    DESC: Base de dados de coordenadas para sorteio de missões PNH.
-*/
+/// --- Documentação PNH_Core: PNH_EventsWorldData.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Atuar como a base de dados centralizada de coordenadas e nomes de eventos para o sorteio de missões, contendo listas estáticas de posições para diferentes tipos de operações como hordas, caça ao urso e quedas de avião.
+/// Comunicação com outros arquivos: É consultado diretamente pelo PNH_MissionManager.c no momento do sorteio aleatório para definir onde a próxima missão será materializada.
+/// Motivo da existência no sistema: Centralizar todas as coordenadas de missões num único ficheiro, facilitando a adição de novos pontos de interesse e mantendo a lógica do Manager limpa de dados geográficos.
+/// Dependências internas: Nenhuma.
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 class PNH_EventsWorldData
 {
     static ref array<string> MissionEvents = new array<string>;

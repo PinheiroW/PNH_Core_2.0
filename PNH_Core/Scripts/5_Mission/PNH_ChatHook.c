@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_ChatHook.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+///[cite_start]/// Função do arquivo: Intercetar todos os eventos de chat do servidor para detetar comandos iniciados por "!" ou "/" e reencaminhá-los para processamento, além de espelhar o chat global no Discord[cite: 31].
+///[cite_start]/// Comunicação com outros arquivos: Envia o texto dos comandos para o PNH_ChatManager.c e utiliza o PNH_Discord.c para enviar mensagens de chat global para o webhook configurado[cite: 31].
+/// Motivo da existência no sistema: Servir como o "escuta" oficial do servidor, permitindo que o sistema PNH reaja a inputs de texto dos jogadores de forma dinâmica.
+///[cite_start]/// Dependências internas: PNH_ChatManager.c (processamento), PNH_Discord.c (saída externa), PNH_CoreConfig.c (URLs de webhooks) e PNH_Utils.c[cite: 31].
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 modded class MissionServer
 {
     override void OnEvent(EventType eventTypeId, Param params)

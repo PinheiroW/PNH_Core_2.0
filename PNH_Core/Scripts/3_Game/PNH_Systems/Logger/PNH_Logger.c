@@ -1,8 +1,11 @@
-/*
-    MOD: PNH_Core
-    FILE: PNH_Logger.c
-    DESC: Sistema centralizado de logs com gatilho para Discord Webhooks.
-*/
+/// --- Documentação PNH_Core: PNH_Logger.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+/// Função do arquivo: Centralizar a emissão de mensagens de registo no servidor, diferenciando entre logs informativos, erros críticos e mensagens de depuração (debug) com prefixos visuais.
+/// Comunicação com outros arquivos: Chamado por praticamente todos os Managers e classes do sistema (Audit, Settings, Logistics) para reportar o estado de carregamento e execução de rotinas.
+/// Motivo da existência: Facilitar a identificação de falhas no ficheiro script.log do servidor e automatizar o envio de alertas de erro para o canal administrativo do Discord.
+/// Dependências internas: PNH_Consts.c (prefixo de log) e PNH_Discord.c (para reencaminhamento de alertas).
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
 class PNH_Logger
 {

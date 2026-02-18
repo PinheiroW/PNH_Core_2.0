@@ -1,3 +1,12 @@
+/// --- Documentação PNH_Core: PNH_ConnectionLogger.c ---
+/// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
+//[cite_start]/// Função do arquivo: Monitorizar as entradas e saídas de jogadores no servidor, extraindo dados como Nome e SteamID para registo[cite: 31].
+//[cite_start]/// Comunicação com outros arquivos: Utiliza o PNH_Discord.c para enviar alertas de login e logout em tempo real para o canal de logs administrativos[cite: 31].
+/// Motivo da existência no sistema: Facilitar a administração do servidor, permitindo que os donos saibam quem está a entrar ou sair sem precisarem de consultar os arquivos RPT nativos.
+//[cite_start]/// Dependências internas: PNH_Discord.c e PNH_CoreConfig.c (para obter o LoginWebhookURL)[cite: 31].
+/// Última atualização: 2026-02-18
+/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+
 modded class MissionServer
 {
     // Jogador Conectou
