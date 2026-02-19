@@ -1,0 +1,16 @@
+MetaFileClass {
+ Name "{D136F313C99CF3FF}DayZInformationPanel/GUI/Images/DIP_V3.edds"
+ Author "ctg_modding"
+ ChangeDate -294425337
+ Configurations {
+  PNGResourceClass PC {
+   SourceFile "DIP_V3.png"
+  }
+  PNGResourceClass XBOX_ONE : PC {
+  }
+  PNGResourceClass PS4 : PC {
+  }
+  PNGResourceClass LINUX : PC {
+  }
+ }
+}

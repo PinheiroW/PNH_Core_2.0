@@ -1,0 +1,413 @@
+FrameWidgetClass rootFrame {
+ position 2.26751 0
+ size 1447.93018 1041.92004
+ halign center_ref
+ valign center_ref
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  ImageWidgetClass ImageWidget0 {
+   ignorepointer 1
+   position 0 -0.42
+   size 1126.18982 695.10992
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   imageTexture "PNH_Core/GUI/Images/DIP_Tablet.edds"
+   mode blend
+   "src alpha" 1
+   "no wrap" 1
+   stretch 1
+   {
+    PanelWidgetClass panel_InfoScreen {
+     ignorepointer 1
+     position 104.01 52.22
+     size 914.31097 586.62299
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      TextWidgetClass txt_IPServerName {
+       ignorepointer 1
+       position 1.1 1.8455
+       size 714.79999 36
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text "XXXXXXXXXX"
+       font "gui/fonts/etelkatextpro16"
+       "text valign" center
+      }
+      TextWidgetClass txt_IPServerTime {
+       ignorepointer 1
+       position 716.76001 1.8455
+       size 196.5 36
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text "XX:XX"
+       font "gui/fonts/etelkatextpro16"
+       "text halign" right
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass btn_Discord {
+     position 7.62 494.16
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+    ButtonWidgetClass btn_Donate {
+     position 7.62 579.89001
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+    ButtonWidgetClass btn_Tab1 {
+     position 1066.56995 178.33
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+    ButtonWidgetClass btn_Tab2 {
+     position 1066.56995 264.32999
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+    ButtonWidgetClass btn_Tab3 {
+     position 1064.56995 351.32999
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+    ButtonWidgetClass btn_Tab4 {
+     position 1064.43018 438.32999
+     size 48 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+    }
+   }
+  }
+  PanelWidgetClass Panel_Tab1 {
+   ignorepointer 1
+   position 264.41101 262.71002
+   size 914.25897 550.19
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass txt_Tab1 {
+     visible 1
+     ignorepointer 1
+     position 0 -0.465
+     size 1 0.0625
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     text "XXXXXXXXXX"
+     font "gui/fonts/etelkatextpro22"
+     "text halign" center
+     "text valign" center
+    }
+    TextListboxWidgetClass lstbox_Tab1 {
+     visible 1
+     clipchildren 1
+     position 0 0.036
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     style Default
+     lines 50
+     "highlight row" 0
+     font "gui/fonts/etelkatextpro14"
+    }
+    ScrollWidgetClass Scroll_Tab1 {
+     visible 0
+     ignorepointer 1
+     position 0.0011 0.0347
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     "Scrollbar V" 1
+     {
+      RichTextWidgetClass txt_Info_Tab1 {
+       ignorepointer 1
+       position 0 -0.002
+       size 1 1
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       style DayZNormal
+       text "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       font "gui/fonts/MetronLight16"
+       "exact text" 1
+       wrap 1
+       "condense whitespace" 1
+       "strip newlines" 1
+      }
+     }
+    }
+   }
+  }
+  PanelWidgetClass Panel_Tab2 {
+   ignorepointer 1
+   position 264.41101 262.71002
+   size 914.25897 550.19
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass txt_Tab2 {
+     ignorepointer 1
+     position 0 -0.465
+     size 1 0.0625
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     text "XXXXXXXXXX"
+     font "gui/fonts/etelkatextpro22"
+     "text halign" center
+     "text valign" center
+    }
+    TextListboxWidgetClass lstbox_Tab2 {
+     visible 1
+     position 0 0.036
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     lines 50
+     font "gui/fonts/etelkatextpro14"
+    }
+    ScrollWidgetClass Scroll_Tab2 {
+     visible 0
+     ignorepointer 1
+     position 0.00111 0.03472
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     "Scrollbar V" 1
+     {
+      RichTextWidgetClass txt_Info_Tab2 {
+       ignorepointer 1
+       position 0 -0.002
+       size 1 1
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       style DayZNormal
+       text "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       font "gui/fonts/MetronLight16"
+       "exact text" 1
+       wrap 1
+       "condense whitespace" 1
+       "strip newlines" 1
+      }
+     }
+    }
+   }
+  }
+  PanelWidgetClass Panel_Tab3 {
+   ignorepointer 1
+   position 264.41101 262.71002
+   size 914.25897 550.19
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass txt_Tab3 {
+     ignorepointer 1
+     position 0 -0.465
+     size 1 0.0625
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     text "XXXXXXXXXX"
+     font "gui/fonts/etelkatextpro22"
+     "text halign" center
+     "text valign" center
+    }
+    TextListboxWidgetClass lstbox_Tab3 {
+     visible 1
+     position 0 0.036
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     lines 50
+     font "gui/fonts/etelkatextpro14"
+    }
+    ScrollWidgetClass Scroll_Tab3 {
+     visible 0
+     ignorepointer 1
+     position 0.00111 0.03472
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     "Scrollbar V" 1
+     {
+      RichTextWidgetClass txt_Info_Tab3 {
+       ignorepointer 1
+       position 0 -0.002
+       size 1 1
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       style DayZNormal
+       text "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       font "gui/fonts/MetronLight16"
+       "exact text" 1
+       wrap 1
+       "condense whitespace" 1
+       "strip newlines" 1
+      }
+     }
+    }
+   }
+  }
+  PanelWidgetClass Panel_Tab4 {
+   ignorepointer 1
+   position 264.41101 262.71002
+   size 914.25897 550.19
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass txt_Tab4 {
+     ignorepointer 1
+     position 0 -0.465
+     size 1 0.0625
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     text "XXXXXXXXXX"
+     font "gui/fonts/etelkatextpro22"
+     "text halign" center
+     "text valign" center
+    }
+    TextListboxWidgetClass lstbox_Tab4 {
+     visible 1
+     position 0 0.036
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     "no focus" 0
+     lines 50
+     font "gui/fonts/etelkatextpro14"
+    }
+    ScrollWidgetClass Scroll_Tab4 {
+     visible 0
+     ignorepointer 1
+     position 0.00111 0.03472
+     size 1 0.93
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     "Scrollbar V" 1
+     {
+      RichTextWidgetClass txt_Info_Tab4 {
+       ignorepointer 1
+       position 0 -0.002
+       size 1 1
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       style DayZNormal
+       text "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       font "gui/fonts/MetronLight16"
+       "exact text" 1
+       wrap 1
+       "condense whitespace" 1
+       "strip newlines" 1
+      }
+     }
+    }
+   }
+  }
+ }
+}

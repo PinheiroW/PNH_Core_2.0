@@ -1,0 +1,16 @@
+MetaFileClass {
+ Name "{C8226E0D445768E1}DayZInformationPanel/GUI/Images/DIP_Tablet.edds"
+ Author "ctg_modding"
+ ChangeDate -937136395
+ Configurations {
+  PNGResourceClass PC {
+   SourceFile "DIP_Tablet.png"
+  }
+  PNGResourceClass XBOX_ONE : PC {
+  }
+  PNGResourceClass PS4 : PC {
+  }
+  PNGResourceClass LINUX : PC {
+  }
+ }
+}

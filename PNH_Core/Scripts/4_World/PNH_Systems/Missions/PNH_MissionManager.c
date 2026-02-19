@@ -1,11 +1,6 @@
 /// --- Documentação PNH_Core: PNH_MissionManager.c ---
-/// Versão do Sistema: 1.1.0 (Integração de Narrativa Dinâmica)
-/// Função do arquivo: Atuar como o motor central das missões. Agora, além de gerir estados e timers, é responsável por injetar a Lore correta do dicionário JSON na missão ativa.
-/// Comunicação com outros arquivos: Recebe batimento do PNH_Init.c. Consulta PNH_MissionSettings.c para obter o dicionário de lore e alimenta o objeto m_ActiveMission com as etapas de rádio.
-/// Motivo da existência no sistema: Centralizar a inteligência de execução e garantir que cada missão sorteada tenha acesso aos seus textos de narrativa específicos.
-/// Dependências internas: PNH_MissionSettings.c (dados), PNH_EventsWorldData.c (locais), PNH_AuditManager.c e PNH_TimeManager.c.
-/// Última atualização: 2026-02-18
-/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+/// Versão do Sistema: 2.0.0 (Suporte a Múltiplas Narrativas)
+/// Funções atualizadas: StartRandomMission agora suporta instanciar 'Apartment' de forma dinâmica.
 
 class PNH_MissionManager
 {
@@ -13,7 +8,7 @@ class PNH_MissionManager
     ref PNH_MissionBase m_ActiveMission;
     int m_MissionState;     
     int m_CooldownTimer;
-    float m_UpdateFrequency = 2.0; 
+    float m_UpdateFrequency = 2.0; //
     float m_TimerAccumulator;
 
     void PNH_MissionManager() 
@@ -21,7 +16,7 @@ class PNH_MissionManager
         m_MissionState = 0; 
         m_TimerAccumulator = 0;
         PNH_MissionSettings.Load(); 
-        m_CooldownTimer = 30; 
+        m_CooldownTimer = 30; //
     }
 
     static PNH_MissionManager GetInstance() 
@@ -34,7 +29,7 @@ class PNH_MissionManager
     {
         m_TimerAccumulator += timeslice;
         
-        if (m_TimerAccumulator >= m_UpdateFrequency)
+        if (m_TimerAccumulator >= m_UpdateFrequency) //
         {
             m_TimerAccumulator = 0;
             
@@ -70,15 +65,26 @@ class PNH_MissionManager
         }
     }
 
+    // --- CORREÇÃO: LÓGICA DE SORTEIO DINÂMICO ---
     void StartRandomMission()
     {
-        // 1. Instanciação Base
-        m_ActiveMission = new HordeMission(); 
-        m_ActiveMission.m_MissionTier = 1;
-        m_ActiveMission.m_MissionType = "Horde";
+        // 1. Decisão do Tipo de Missão (50% de chance para cada)
+        float randType = Math.RandomFloat(0, 1);
         
-        // --- NOVO: INJEÇÃO DE NARRATIVA DINÂMICA ---
-        // Procuramos no dicionário de configurações os diálogos para este tipo de missão
+        if (randType > 0.5)
+        {
+            m_ActiveMission = new PNH_MissionApartment(); // Nova classe para Apartment.json
+            m_ActiveMission.m_MissionType = "Apartment";
+            m_ActiveMission.m_MissionTier = 2; // Infiltração é mais difícil
+        }
+        else
+        {
+            m_ActiveMission = new HordeMission(); 
+            m_ActiveMission.m_MissionType = "Horde";
+            m_ActiveMission.m_MissionTier = 1;
+        }
+
+        // 2. INJEÇÃO DE NARRATIVA DINÂMICA (JSON)
         PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
         if (settings && settings.DicionarioMissoes)
         {
@@ -86,7 +92,6 @@ class PNH_MissionManager
             {
                 if (dic.TipoMissao == m_ActiveMission.m_MissionType)
                 {
-                    // Entrega os textos das 4 etapas (Aceitou, 90m, 20m, Final) à missão
                     m_ActiveMission.m_LoreEtapas = dic.Etapas;
                     PNH_Logger.Log("Manager", "[PNH] Narrativa Dinâmica vinculada: " + dic.TipoMissao);
                     break;
@@ -94,13 +99,14 @@ class PNH_MissionManager
             }
         }
         
+        // 3. DEFINIÇÃO DE LOCALIZAÇÃO
         PNH_EventsWorldData.Init();
-        
         array<int> validIndexes = new array<int>;
         for (int i = 0; i < PNH_EventsWorldData.MissionEvents.Count(); i++)
         {
             string eventName = PNH_EventsWorldData.MissionEvents.Get(i);
-            if (eventName.Contains("Horde")) 
+            // Filtra locais que suportam o tipo de missão atual
+            if (eventName.Contains(m_ActiveMission.m_MissionType)) 
             {
                 validIndexes.Insert(i);
             }
@@ -116,13 +122,14 @@ class PNH_MissionManager
         }
         else
         {
-            m_ActiveMission.m_MissionLocation = "Horde Balota_Teste"; 
+            // Fallback caso não encontre locais específicos no WorldData
+            m_ActiveMission.m_MissionLocation = "Setor Residencial"; 
             m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
         }
 
         m_MissionState = 1; 
         
-        PNH_AuditManager.LogMissionEvent("Sistema", "Horde", "Sorteada em " + m_ActiveMission.m_MissionLocation);
+        PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Sorteada em " + m_ActiveMission.m_MissionLocation);
         PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(m_ActiveMission.m_MissionLocation);
     }
 
