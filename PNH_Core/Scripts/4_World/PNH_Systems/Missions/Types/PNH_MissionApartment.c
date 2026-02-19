@@ -1,6 +1,6 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 2.1.0 (Gatilhos de Distância 8 Fases e Injeção de Loot no Barril)
-/// Função: Gerir a narrativa completa de infiltração e extração com rádio tático baseado na posição do jogador.
+/// Versão do Sistema: 2.2.0 (Integração com Agente Treasury: XP + Loot Centralizado)
+/// Função: Gerir a narrativa de infiltração e extração. A entrega final é agora processada pelo TreasuryManager.
 
 class PNH_MissionApartment : PNH_MissionBase
 {
@@ -16,7 +16,7 @@ class PNH_MissionApartment : PNH_MissionBase
     protected bool m_FaseB_Msg90mSent = false;
     protected bool m_FaseB_Msg20mSent = false;
 
-    // 1. MONTAGEM DA MISSÃO (Apenas após aceite no Tablet)
+    // 1. MONTAGEM DA MISSÃO (Após aceite no Tablet)
     override bool DeployMission()
     {
         super.DeployMission(); 
@@ -36,7 +36,7 @@ class PNH_MissionApartment : PNH_MissionBase
 
         if (m_MissionBuilding)
         {
-            // Tranca o prédio
+            // Tranca o prédio e atualiza navegação
             Building Tenement = Building.Cast(m_MissionBuilding);
             for (int k = 0; k < 32; k++) { if (Tenement.IsDoorOpen(k)) Tenement.CloseDoor(k); }
             GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(GetGame().UpdatePathgraphRegionByObject, 1000, false, Tenement);
@@ -81,7 +81,7 @@ class PNH_MissionApartment : PNH_MissionBase
         return false;
     }
 
-    // 2. VERIFICAÇÕES DE DISTÂNCIA E ESTADO (Rádio Realista)
+    // 2. VERIFICAÇÕES DE DISTÂNCIA E ESTADO
     override void MissionChecks()
     {
         super.MissionChecks();
@@ -90,12 +90,9 @@ class PNH_MissionApartment : PNH_MissionBase
         if (!owner) return;
 
         float dist;
-
         if (!m_FaseEntregaAtiva)
         {
-            // --- LÓGICA FASE A (INFILTRAÇÃO) ---
             dist = vector.Distance(owner.GetPosition(), m_MissionPosition);
-
             if (dist < 90.0 && !m_Msg90mSent) {
                 PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(owner, m_MissionInformant, m_LoreEtapas.Chegou_90m, 8.0, "Notifications/gui/data/info.edds");
                 m_Msg90mSent = true;
@@ -108,9 +105,7 @@ class PNH_MissionApartment : PNH_MissionBase
         }
         else
         {
-            // --- LÓGICA FASE B (EXTRAÇÃO) ---
             dist = vector.Distance(owner.GetPosition(), m_Config.PosicaoEntrega.ToVector());
-
             if (!m_FaseB_MsgInicioSent) {
                 PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(owner, m_MissionInformant, m_LoreEtapas.FaseB_Inicio, 8.0, "Notifications/gui/data/info.edds");
                 m_FaseB_MsgInicioSent = true;
@@ -172,27 +167,22 @@ class PNH_MissionApartment : PNH_MissionBase
         }
     }
 
-    // 3. FINALIZAÇÃO E INJEÇÃO DE LOOT NO BARRIL
+    // 3. FINALIZAÇÃO DELEGADA AO TREASURY
     void FinalizeMission(PlayerBase p)
     {
+        if (!p) return;
+
+        // Notificação Global de Conclusão
         PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_LoreEtapas.FaseB_Concluiu);
         
-        EntityAI container = EntityAI.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_Config.PosicaoBarrilEntrega.ToVector()));
-        if (container) 
-        {
-            container.SetOrientation(m_Config.OrientacaoBarrilEntrega.ToVector());
-            m_CenarioObjetos.Insert(container); 
-
-            // --- INJEÇÃO DE LOOT (Sorteia Loadout do JSON) ---
-            if (m_Config.RecompensasHorda.Loadouts.Count() > 0)
-            {
-                PNH_RecompensaLoadout loadout = m_Config.RecompensasHorda.Loadouts.GetRandomElement();
-                foreach (string itemClass : loadout.Itens)
-                {
-                    container.GetInventory().CreateInInventory(itemClass);
-                }
-            }
-        }
+        // DELEGAÇÃO: O Treasury processa o XP e gera o barril físico com o loot sorteado do Tier 2
+        PNH_TreasuryManager.ProcessMissionReward(
+            p.GetIdentity().GetPlainId(), 
+            p.GetIdentity().GetName(), 
+            m_MissionTier, 
+            m_Config.PosicaoBarrilEntrega.ToVector(), 
+            m_Config.OrientacaoBarrilEntrega.ToVector()
+        );
         
         PNH_MissionManager.GetInstance().EndMission();
     }
