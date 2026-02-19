@@ -1,11 +1,122 @@
 /// --- Documentação PNH_Core: PNH_MissionData.c ---
-/// Versão do Sistema: 1.2.0 (Fase de Localização Total)
-/// Função do arquivo: Definir as classes de dados e modelos (Data Models) que estruturam o ficheiro de configuração PNH_MissionSettings.json. Agora expandido para suportar a localização de todas as mensagens de interface, chat e recompensas.
-/// Comunicação com outros arquivos: Serve como o "esqueleto" de dados utilizado pelo PNH_MissionSettings.c para carregar as configurações e é consultado pelo ChatManager e TreasuryManager.
-/// Motivo da existência: Isolar a definição da estrutura de dados da lógica de processamento, permitindo que o mod seja totalmente traduzível via JSON.
-/// Dependências internas: Nenhuma.
-/// Última atualização: 2026-02-18
-/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+/// Versão do Sistema: 2.2.0 (Suporte Completo para Narrativas de Infiltração e Cenas Dinâmicas)
+/// Função do arquivo: Definir as classes de dados e modelos (Data Models) para o ficheiro PNH_MissionSettings.json e configurações individuais de missões (Ex: Apartment.json).
+
+// =========================================================================
+// 1. CLASSES PARA MISSÕES DE INFILTRAÇÃO E NARRATIVAS (Apartment.json)
+// =========================================================================
+
+class PNH_CenarioBarricada 
+{
+    string Classe;
+    string PosicaoLocal;
+    string OrientacaoLocal;
+}
+
+class PNH_CenarioConfig 
+{
+    ref array<ref PNH_CenarioBarricada> Barricadas;
+    
+    void PNH_CenarioConfig() 
+    {
+        Barricadas = new array<ref PNH_CenarioBarricada>;
+    }
+}
+
+class PNH_DificuldadeConfig
+{
+    int QuantidadeHordaFinal;
+    ref array<string> ClassesZumbis;
+
+    void PNH_DificuldadeConfig()
+    {
+        ClassesZumbis = new array<string>;
+    }
+}
+
+class PNH_RecompensaLoadout
+{
+    ref array<string> Itens;
+
+    void PNH_RecompensaLoadout()
+    {
+        Itens = new array<string>;
+    }
+}
+
+class PNH_RecompensasConfig
+{
+    string Container;
+    ref array<ref PNH_RecompensaLoadout> Loadouts;
+
+    void PNH_RecompensasConfig()
+    {
+        Loadouts = new array<ref PNH_RecompensaLoadout>;
+    }
+}
+
+class PNH_LoreApartment 
+{
+    string Informante;
+    ref array<string> NomesSobreviventes;
+    ref array<string> MensagensRadio;
+    string MensagemAproximacao;
+    string MensagemNoObjetivo;
+    string MensagemFaseB;
+    string MensagemAproximacaoEntrega;
+    string MensagemNoObjetivoEntrega;
+    string MensagemVitoria;
+
+    void PNH_LoreApartment()
+    {
+        NomesSobreviventes = new array<string>;
+        MensagensRadio = new array<string>;
+    }
+}
+
+// Modelo mestre para carregar ficheiros de missão individuais
+class PNH_MissionConfigData 
+{
+    bool Ativa;
+    float TempoLimiteSegundos;
+    float RaioAvisoExterno;
+    float RaioAvisoInterno;
+    string ClasseCorpo;
+    string PosicaoCorpoLocal;
+    string OrientacaoCorpoLocal;
+    string ClasseZumbiAssassino;
+    string PosicaoZumbiAssassinoLocal;
+    ref array<string> RoupasNPC;
+    ref array<string> InventarioNPC;
+    ref array<string> SpawnsZumbisInternos;
+    string ItemMissao;
+    string PosicaoEntrega;
+    string PosicaoBarrilEntrega;
+    string OrientacaoBarrilEntrega;
+    string CidadeEntrega;
+    string ClasseNPCEntrega;
+    ref array<string> RoupasNPCEntrega;
+    ref PNH_LoreApartment Lore;
+    ref PNH_DificuldadeConfig Dificuldade;
+    ref PNH_CenarioConfig Cenario;
+    ref PNH_RecompensasConfig RecompensasHorda;
+
+    void PNH_MissionConfigData()
+    {
+        RoupasNPC = new array<string>;
+        InventarioNPC = new array<string>;
+        SpawnsZumbisInternos = new array<string>;
+        RoupasNPCEntrega = new array<string>;
+        Lore = new PNH_LoreApartment();
+        Dificuldade = new PNH_DificuldadeConfig();
+        Cenario = new PNH_CenarioConfig();
+        RecompensasHorda = new PNH_RecompensasConfig();
+    }
+}
+
+// =========================================================================
+// 2. CLASSES DO SISTEMA DE CONFIGURAÇÃO GLOBAL (PNH_MissionSettings.json)
+// =========================================================================
 
 class PNH_DebugSettings {
     bool DebugMode;
@@ -78,28 +189,20 @@ class PNH_LootItem {
     int Quantidade;
 }
 
-// --- CLASSE DE TEXTOS EXPANDIDA PARA LOCALIZAÇÃO TOTAL ---
 class PNH_TextosInterface {
-    // Erros de Assinatura
     string Erro_LongeNPC;
     string Erro_JaAssinado;
     string Erro_PatenteBaixa;
     string Sucesso_Assinatura;
-
-    // Mensagens de Recompensa (Treasury)
-    string Msg_ContratoLiquidado; // Ex: "[PNH] CONTRATO LIQUIDADO: +%1 XP"
-
-    // Mensagens de Status (!perfil)
-    string Msg_StatusOperador;    // Ex: "Operador: %1"
-    string Msg_StatusPatente;     // Ex: "Patente: %1"
-    string Msg_StatusXP;          // Ex: "XP Atual: %1"
-    string Msg_StatusProximoNivel;// Ex: "Proximo Nivel: %1 XP para %2"
-    string Msg_StatusMissaoAtiva; // Ex: "Missao Ativa: %1"
-
-    // Mensagens de Consulta (!missao)
-    string Msg_MissaoDisponivel;  // Ex: "Temos um contrato disponivel em: %1"
-    string Msg_MissaoEmOperacao;  // Ex: "Ja existe um esquadrao em operacao."
-    string Msg_SemOperacoes;      // Ex: "Sem operacoes no momento. Aguardando Intel..."
+    string Msg_ContratoLiquidado;
+    string Msg_StatusOperador;
+    string Msg_StatusPatente;
+    string Msg_StatusXP;
+    string Msg_StatusProximoNivel;
+    string Msg_StatusMissaoAtiva;
+    string Msg_MissaoDisponivel;
+    string Msg_MissaoEmOperacao;
+    string Msg_SemOperacoes;
 }
 
 class PNH_LoreEtapas {

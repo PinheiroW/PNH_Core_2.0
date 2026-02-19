@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 1.0.0
+/// Versão do Sistema: 1.1.0 (Correção de Vetores e Equipamento Dinâmico)
 /// Função: Gerir a narrativa de infiltração, recuperação de item e entrega final ao contato Boris.
 
 class PNH_MissionApartment : PNH_MissionBase
@@ -40,7 +40,19 @@ class PNH_MissionApartment : PNH_MissionBase
 
         // --- SPAWN DO ASSASSINO (ZUMBI ALVO) ---
         vector posZmbAlvo = m_MissionPosition + m_Config.PosicaoZumbiAssassinoLocal.ToVector();
-        GetGame().CreateObject(m_Config.ClasseZumbiAssassino, posZmbAlvo);
+        EntityAI assassin = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseZumbiAssassino, posZmbAlvo));
+        if (assassin)
+        {
+            // Equipa o Assassino com as roupas e itens do JSON
+            foreach (string roupaNPC : m_Config.RoupasNPC) 
+            {
+                assassin.GetInventory().CreateInInventory(roupaNPC);
+            }
+            foreach (string itemNPC : m_Config.InventarioNPC) 
+            {
+                assassin.GetInventory().CreateInInventory(itemNPC);
+            }
+        }
 
         // --- SPAWN DA HORDA INTERNA ---
         foreach (string posZmb : m_Config.SpawnsZumbisInternos)
@@ -85,7 +97,7 @@ class PNH_MissionApartment : PNH_MissionBase
 
     void SpawnNPCEntrega()
     {
-        m_NPCEntrega = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseNPCEntrega, m_Config.PosicaoEntrega));
+        m_NPCEntrega = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseNPCEntrega, m_Config.PosicaoEntrega.ToVector()));
         if (m_NPCEntrega)
         {
             // Veste o Boris conforme o contrato
@@ -105,7 +117,7 @@ class PNH_MissionApartment : PNH_MissionBase
 
         foreach (Man p : players)
         {
-            float dist = vector.Distance(p.GetPosition(), m_Config.PosicaoEntrega);
+            float dist = vector.Distance(p.GetPosition(), m_Config.PosicaoEntrega.ToVector());
             if (dist < 3.0)
             {
                 InventoryItem item = InventoryItem.Cast(p.GetInventory().FindAttachmentByName(m_Config.ItemMissao));
@@ -125,7 +137,7 @@ class PNH_MissionApartment : PNH_MissionBase
         PNH_BroadcastManager.GetInstance().SendGlobalMessage(m_Config.Lore.MensagemVitoria);
         
         // Gera o barril de pagamento
-        EntityAI container = EntityAI.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_Config.PosicaoBarrilEntrega));
+        EntityAI container = EntityAI.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_Config.PosicaoBarrilEntrega.ToVector()));
         if (container)
         {
             container.SetOrientation(m_Config.OrientacaoBarrilEntrega.ToVector());

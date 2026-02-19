@@ -1,11 +1,8 @@
 /// --- Documentação PNH_Core: PNH_EventsWorldData.c ---
 /// Versão do Sistema: 1.0.0 (Ref: PNH_Consts)
-/// Função do arquivo: Atuar como a base de dados centralizada de coordenadas e nomes de eventos para o sorteio de missões, contendo listas estáticas de posições para diferentes tipos de operações como hordas, caça ao urso e quedas de avião.
-/// Comunicação com outros arquivos: É consultado diretamente pelo PNH_MissionManager.c no momento do sorteio aleatório para definir onde a próxima missão será materializada.
-/// Motivo da existência no sistema: Centralizar todas as coordenadas de missões num único ficheiro, facilitando a adição de novos pontos de interesse e mantendo a lógica do Manager limpa de dados geográficos.
-/// Dependências internas: Nenhuma.
+/// Função do arquivo: Atuar como a base de dados centralizada de coordenadas e nomes de eventos para o sorteio de missões.
+/// Comunicação com outros arquivos: É consultado diretamente pelo PNH_MissionManager.c para definir onde a próxima missão será materializada.
 /// Última atualização: 2026-02-18
-/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
 
 class PNH_EventsWorldData
 {
@@ -14,46 +11,68 @@ class PNH_EventsWorldData
 
     static void Init()
     {
-        if (MissionEvents.Count() > 0) return; // Evita carregar duas vezes
+        // Evita carregar os dados múltiplas vezes na memória
+        if (MissionEvents.Count() > 0) return; 
 
         // =========================================================================
-        // --- LISTA DE MISSÕES (Corrigidas com .ToVector()) ---
+        // --- LISTA DE MISSÕES (Sincronizadas com o MissionManager) ---
         // =========================================================================
         
-        // --- APARTAMENTOS ---
-        MissionEvents.Insert("Apartment Berezino north TenSmall_1");   MissionPositions.Insert("12166.4 20.8 9692.8".ToVector());
-        MissionEvents.Insert("Apartment Berezino north TenSmall_2");   MissionPositions.Insert("12144.5 20.8 9698.3".ToVector());
-        MissionEvents.Insert("Apartment Chernogorsk central TenSmall_1"); MissionPositions.Insert("6436.6 18.5 2765.3".ToVector());
-        MissionEvents.Insert("Apartment Elektrozavodsk west TenSmall_1"); MissionPositions.Insert("9994.5 17.3 2106.6".ToVector());
+        // --- APARTAMENTOS (Suporte para Missão Infiltração) ---
+        MissionEvents.Insert("Apartment Berezino north TenSmall_1");   
+        MissionPositions.Insert("12166.4 20.8 9692.8".ToVector());
+        
+        MissionEvents.Insert("Apartment Berezino north TenSmall_2");   
+        MissionPositions.Insert("12144.5 20.8 9698.3".ToVector());
+        
+        MissionEvents.Insert("Apartment Chernogorsk central TenSmall_1"); 
+        MissionPositions.Insert("6436.6 18.5 2765.3".ToVector());
+        
+        MissionEvents.Insert("Apartment Elektrozavodsk west TenSmall_1"); 
+        MissionPositions.Insert("9994.5 17.3 2106.6".ToVector());
 
         // --- CAÇA AO URSO (BearHunt) ---
-        MissionEvents.Insert("BearHunt Black_Lake west Berezino");      MissionPositions.Insert("13192.0 93.0 11995.0".ToVector());
-        MissionEvents.Insert("BearHunt Bor northwest Vysotovo");       MissionPositions.Insert("3597.8 215.7 4011.3".ToVector());
+        MissionEvents.Insert("BearHunt Black_Lake west Berezino");      
+        MissionPositions.Insert("13192.0 93.0 11995.0".ToVector());
+        
+        MissionEvents.Insert("BearHunt Bor northwest Vysotovo");       
+        MissionPositions.Insert("3597.8 215.7 4011.3".ToVector());
 
         // --- HORDAS (Horde) ---
-        MissionEvents.Insert("Horde Balota west Residential_1");       MissionPositions.Insert("4400.5 7.3 2517.7".ToVector());
-        MissionEvents.Insert("Horde Balota west Residential_2");       MissionPositions.Insert("4425.0 11.9 2466.1".ToVector());
-        MissionEvents.Insert("Horde Bor north Residential_1");         MissionPositions.Insert("3107.7 218.4 4039.7".ToVector());
+        MissionEvents.Insert("Horde Balota west Residential_1");       
+        MissionPositions.Insert("4400.5 7.3 2517.7".ToVector());
+        
+        MissionEvents.Insert("Horde Balota west Residential_2");       
+        MissionPositions.Insert("4425.0 11.9 2466.1".ToVector());
+        
+        MissionEvents.Insert("Horde Bor north Residential_1");         
+        MissionPositions.Insert("3107.7 218.4 4039.7".ToVector());
 
         // --- QUEDAS DE AVIÃO (PlaneCrash) ---
-        MissionEvents.Insert("PlaneCrash Balota_Airstrip central");    MissionPositions.Insert("4934.0 9.5 2551.1".ToVector());
-        MissionEvents.Insert("PlaneCrash Elektrozavodsk west");        MissionPositions.Insert("9140.1 5.9 2010.6".ToVector());
+        MissionEvents.Insert("PlaneCrash Balota_Airstrip central");    
+        MissionPositions.Insert("4934.0 9.5 2551.1".ToVector());
+        
+        MissionEvents.Insert("PlaneCrash Elektrozavodsk west");        
+        MissionPositions.Insert("9140.1 5.9 2010.6".ToVector());
 
         // --- TRANSPORTE (Transport) ---
-        MissionEvents.Insert("Transport Vybor to Altar");             MissionPositions.Insert("4202.2 324.4 8963.4".ToVector());
+        MissionEvents.Insert("Transport Vybor to Altar");             
+        MissionPositions.Insert("4202.2 324.4 8963.4".ToVector());
 
         // --- CIDADES/LOJAS (CityStore) ---
-        MissionEvents.Insert("CityStore Berezino central Dolina");     MissionPositions.Insert("12029.0 55.4 9161.8".ToVector());
-        MissionEvents.Insert("CityStore Elektrozavodsk central Dolina"); MissionPositions.Insert("10423.1 7.4 2364.9".ToVector());
+        MissionEvents.Insert("CityStore Berezino central Dolina");     
+        MissionPositions.Insert("12029.0 55.4 9161.8".ToVector());
+        
+        MissionEvents.Insert("CityStore Elektrozavodsk central Dolina"); 
+        MissionPositions.Insert("10423.1 7.4 2364.9".ToVector());
 
         // --- CEMITÉRIOS (Graveyard) ---
-        MissionEvents.Insert("Graveyard Berezino west Stash_1");       MissionPositions.Insert("13006.3 6.2 10575.4".ToVector());
-        
-        // Podes continuar a adicionar as tuas centenas de coordenadas aqui, 
-        // seguindo sempre o padrão: NomeDaClasse + Espaço + Descrição + .ToVector()
+        MissionEvents.Insert("Graveyard Berezino west Stash_1");       
+        MissionPositions.Insert("13006.3 6.2 10575.4".ToVector());
         
     } // Fecha Init
 
+    // Função auxiliar (Pode ser expandida no futuro para gerar loot dinâmico em edifícios)
     static bool GetBuildingsAtLoc(string bldName, string desc, out array<vector> posList)
     {
         if (!posList) posList = new array<vector>;
