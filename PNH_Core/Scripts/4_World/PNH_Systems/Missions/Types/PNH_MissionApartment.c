@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 1.3.1 (Correção de Variável Inexistente)
+/// Versão do Sistema: 1.3.2 (Correção da Chamada de Broadcast)
 /// Função: Gerir a narrativa de infiltração, rastreio dinâmico do item e entrega final ao contato Boris.
 
 class PNH_MissionApartment : PNH_MissionBase
@@ -71,15 +71,14 @@ class PNH_MissionApartment : PNH_MissionBase
     // Verifica se o livro foi roubado/retirado do corpo
     void CheckItemDiscovery()
     {
-        // Se o item existe, mas a sua "raiz" (quem o está a carregar) já não é o corpo do traidor
         if (m_ItemObjetivo && m_CorpoTraidor)
         {
             if (m_ItemObjetivo.GetHierarchyRoot() != m_CorpoTraidor)
             {
-                // Apenas ativamos a Fase de Entrega através deste booleano
                 m_FaseEntregaAtiva = true;
                 
-                PNH_BroadcastManager.GetInstance().SendGlobalMessage(m_Config.Lore.MensagemFaseB + m_Config.CidadeEntrega);
+                // CORREÇÃO: Utilizando 'BroadcastGlobal' conforme o PNH_BroadcastManager.c do teu repositório
+                PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_Config.Lore.MensagemFaseB + m_Config.CidadeEntrega);
                 SpawnNPCEntrega();
             }
         }
@@ -95,20 +94,16 @@ class PNH_MissionApartment : PNH_MissionBase
         }
     }
 
-    // Rastreia o livro em si até ao ponto de entrega, ignorando em qual mochila está
     void CheckDeliveryPoint()
     {
         if (m_ItemObjetivo)
         {
-            // Se o livro físico (e quem o carrega) estiver a menos de 3 metros do ponto do Boris
             float distToBoris = vector.Distance(m_ItemObjetivo.GetPosition(), m_Config.PosicaoEntrega.ToVector());
             
             if (distToBoris < 3.0)
             {
-                // Deleta o livro para simular a entrega
                 GetGame().ObjectDelete(m_ItemObjetivo); 
                 
-                // Encontra qual jogador estava perto para lhe passar a glória e pagar
                 array<Man> players = new array<Man>;
                 GetGame().GetPlayers(players);
                 PlayerBase winner = null;
@@ -129,7 +124,8 @@ class PNH_MissionApartment : PNH_MissionBase
 
     void FinalizeMission(PlayerBase p)
     {
-        PNH_BroadcastManager.GetInstance().SendGlobalMessage(m_Config.Lore.MensagemVitoria);
+        // CORREÇÃO: Utilizando 'BroadcastGlobal'
+        PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_Config.Lore.MensagemVitoria);
         
         EntityAI container = EntityAI.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_Config.PosicaoBarrilEntrega.ToVector()));
         if (container) container.SetOrientation(m_Config.OrientacaoBarrilEntrega.ToVector());
@@ -139,7 +135,7 @@ class PNH_MissionApartment : PNH_MissionBase
 
     override void CleanUp()
     {
-        if (m_ItemObjetivo && !m_FaseEntregaAtiva) GetGame().ObjectDelete(m_ItemObjetivo); // Deleta o livro se a missão falhar antes de ser pego
+        if (m_ItemObjetivo && !m_FaseEntregaAtiva) GetGame().ObjectDelete(m_ItemObjetivo); 
         foreach (Object obj : m_CenarioObjetos) if (obj) GetGame().ObjectDelete(obj);
         super.CleanUp();
     }
