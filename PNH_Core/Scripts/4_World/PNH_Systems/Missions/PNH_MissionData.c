@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionData.c ---
-/// Versão do Sistema: 2.3.0 (Estrutura de Diálogos por Fases A e B)
+/// Versão do Sistema: 2.4.0 (Suporte à Narrativa de 8 Fases no Dicionário Global)
 /// Função do arquivo: Definir as classes de dados e modelos (Data Models) para o ficheiro PNH_MissionSettings.json e configurações individuais de missões (Ex: Apartment.json).
 
 // =========================================================================
@@ -58,8 +58,8 @@ class PNH_RecompensasConfig
 class PNH_LoreApartment 
 {
     string Informante;
-    ref array<string> MensagensFaseA; // Os 3 textos da infiltração
-    ref array<string> MensagensFaseB; // Os 3 textos da extração
+    ref array<string> MensagensFaseA; 
+    ref array<string> MensagensFaseB; 
     string MensagemVitoria;
 
     void PNH_LoreApartment()
@@ -91,7 +91,7 @@ class PNH_MissionConfigData
     string CidadeEntrega;
     string ClasseNPCEntrega;
     ref array<string> RoupasNPCEntrega;
-    ref PNH_LoreApartment Lore;
+    ref PNH_LoreApartment Lore; // Mantido temporariamente por segurança caso o JSON antigo ainda tenha o bloco
     ref PNH_DificuldadeConfig Dificuldade;
     ref PNH_CenarioConfig Cenario;
     ref PNH_RecompensasConfig RecompensasHorda;
@@ -200,11 +200,21 @@ class PNH_TextosInterface {
     string Msg_SemOperacoes;
 }
 
+// -------------------------------------------------------------
+// ADIÇÃO CRÍTICA: ESTRUTURA PARA AS 8 FASES (Fase A e Fase B)
+// -------------------------------------------------------------
 class PNH_LoreEtapas {
+    // Fase A: Infiltração
     string Aceitou;
     string Chegou_90m;
     string Chegou_20m;
     string Concluiu;
+    
+    // Fase B: Extração
+    string FaseB_Inicio;
+    string FaseB_Chegou_90m;
+    string FaseB_Chegou_20m;
+    string FaseB_Concluiu;
 }
 
 class PNH_DicionarioMissao {
