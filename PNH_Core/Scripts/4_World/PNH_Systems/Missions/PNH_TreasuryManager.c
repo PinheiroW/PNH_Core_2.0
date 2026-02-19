@@ -1,11 +1,11 @@
 /// --- Documentação PNH_Core: PNH_TreasuryManager.c ---
-/// Versão do Sistema: 2.1.5 (Proteção de Loot e Sincronização de 5 Parâmetros)
+/// Versão do Sistema: 2.1.6 (Correção de Assinatura do Motor Enforce)
 /// Função: Único ponto de distribuição de recompensas (XP + Loot Físico).
 
 class PNH_TreasuryManager
 {
-    // Função principal: Agora aceita os 5 parâmetros para casar com MissionManager e Missões
-    static void ProcessMissionReward(string steamID, string playerName, int tier, vector pos = "0 0 0", vector ori = "0 0 0")
+    // CORREÇÃO CRÍTICA: Removidos os valores padrão ("0 0 0") que quebravam a leitura do compilador
+    static void ProcessMissionReward(string steamID, string playerName, int tier, vector pos, vector ori)
     {
         PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(steamID, playerName);
         PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
@@ -24,8 +24,8 @@ class PNH_TreasuryManager
         pData.ClasseMissaoAtiva = "";
         PNH_ProfileManager.SaveProfile(pData);
         
-        // 2. Materialização do Barril apenas se houver uma posição válida
-        if (pos != "0 0 0")
+        // 2. Materialização do Barril (Usando a constante vector.Zero nativa do DayZ)
+        if (pos != vector.Zero)
         {
             GeneratePhysicalReward(pos, ori, tier, settings);
         }
@@ -42,13 +42,11 @@ class PNH_TreasuryManager
 
     protected static void GeneratePhysicalReward(vector pos, vector ori, int tier, PNH_MissionSettingsData settings)
     {
-        // Cria o barril na posição e orientação enviadas pela missão
         EntityAI container = EntityAI.Cast(GetGame().CreateObject("Barrel_Blue", pos));
         if (!container) return;
 
         container.SetOrientation(ori);
 
-        // Seleciona a pool de loot correta baseada no Tier da missão
         array<ref PNH_LootItem> pool;
         if (tier == 1)      pool = settings.Loot_Tier1;
         else if (tier == 2) pool = settings.Loot_Tier2;
