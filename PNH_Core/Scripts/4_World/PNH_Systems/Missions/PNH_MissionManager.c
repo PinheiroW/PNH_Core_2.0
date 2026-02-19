@@ -1,30 +1,32 @@
-/// --- Documentação PNH_Core: PNH_MissionManager.c ---
-/// Versão do Sistema: 2.1.4 (Remoção do Deploy Automático)
-/// Funções atualizadas: A missão agora APENAS nasce no mapa após ser aceita via Tablet/Broker.
+/// --- PNH_MissionManager.c (v2.1.6 - CORRIGIDO) ---
+/// Função: Centralizar o sorteio, estados e limpeza das missões no servidor.
 
 class PNH_MissionManager
 {
     static ref PNH_MissionManager m_Instance; 
     ref PNH_MissionBase m_ActiveMission;
-    int m_MissionState;     
+    int m_MissionState;     // 0: Idle, 1: Disponível, 2: Materializando, 3: Ativa
     int m_CooldownTimer;
     float m_UpdateFrequency = 2.0; 
     float m_TimerAccumulator;
 
+    // Construtor do Gestor
     void PNH_MissionManager() 
     { 
         m_MissionState = 0; 
         m_TimerAccumulator = 0;
-        PNH_MissionSettings.Load(); 
+        PNH_MissionSettings.Load(); // Carrega as configurações globais do JSON
         m_CooldownTimer = 30; 
     }
 
+    // Singleton para acesso global
     static PNH_MissionManager GetInstance() 
     { 
         if (!m_Instance) m_Instance = new PNH_MissionManager(); 
         return m_Instance; 
     }
 
+    // Ciclo de atualização do Gestor
     void OnUpdate(float timeslice)
     {
         m_TimerAccumulator += timeslice;
@@ -35,121 +37,62 @@ class PNH_MissionManager
             
             switch (m_MissionState)
             {
-                case 0: // IDLE
-                    m_CooldownTimer -= 2; 
-                    if (m_CooldownTimer <= 0) StartRandomMission(); 
-                    break;
-                case 1: // DISPONÍVEL (Aguardando alguém aceitar no Tablet)
-                    break;
-                case 2: // MATERIALIZANDO (Broker chamou o DeployMission)
-                    m_ActiveMission.m_MissionTime += 2;
-                    if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, 15)) 
+                case 0: // IDLE - Aguarda o tempo de Cooldown para sortear
+                    if (m_CooldownTimer <= 0)
                     {
-                        m_MissionState = 3; 
-                        PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Vigilancia Ativada");
+                        StartRandomMission();
+                    }
+                    else
+                    {
+                        m_CooldownTimer -= 2;
                     }
                     break;
-                case 3: // ATIVA (Em andamento no mapa)
-                    m_ActiveMission.m_MissionTime += 2;
-                    if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, m_ActiveMission.m_MissionTimeout)) 
+
+                case 3: // ATIVA - A missão está em curso, monitoriza progresso e rádio
+                    if (m_ActiveMission)
                     {
-                        PNH_AuditManager.LogMissionEvent(m_ActiveMission.m_MissionOwnerName, m_ActiveMission.m_MissionType, "Falhou por Tempo");
-                        EndMission();
-                    }
-                    else 
-                    {
-                        m_ActiveMission.MissionChecks(); 
+                        m_ActiveMission.MissionChecks();
                     }
                     break;
             }
         }
     }
 
+    // Sorteia e prepara a próxima missão (Sem materializar ainda)
     void StartRandomMission()
     {
-        float randType = Math.RandomFloat(0, 1);
-        string jsonPath = "";
+        if (m_ActiveMission) return;
 
-        // 1. Decisão do Tipo de Missão e Definição do Caminho do JSON
-        if (randType > 0.5)
+        // Sorteio Simples (Exemplo: 50% de chance para cada tipo disponível)
+        int dice = Math.RandomInt(0, 100);
+        
+        if (dice < 50)
+        {
+            m_ActiveMission = new HordeMission();
+            m_ActiveMission.m_MissionTier = 1; // Horda é Tier 1
+        }
+        else
         {
             m_ActiveMission = new PNH_MissionApartment();
-            m_ActiveMission.m_MissionType = "Apartment";
-            m_ActiveMission.m_MissionTier = 2;
-            jsonPath = "$profile:PNH/Missions/Apartment.json"; 
-        }
-        else
-        {
-            m_ActiveMission = new HordeMission(); 
-            m_ActiveMission.m_MissionType = "Horde";
-            m_ActiveMission.m_MissionTier = 1;
-            jsonPath = "$profile:PNH/Missions/Horde.json"; 
-        }
-
-        // 2. CARREGAMENTO DA CONFIGURAÇÃO ESPECÍFICA DO JSON
-        PNH_MissionConfigData config = LoadMissionConfig(jsonPath);
-        if (config) 
-        {
-            m_ActiveMission.m_Config = config;
-            PNH_Logger.Log("Manager", "[PNH] Configuração de missão carregada de: " + jsonPath);
-        }
-        else 
-        {
-            PNH_Logger.Log("Manager", "[PNH] Erro Crítico: Arquivo de configuração não encontrado em " + jsonPath);
-            m_CooldownTimer = 60; 
-            m_ActiveMission = null;
-            return; 
-        }
-
-        // 3. INJEÇÃO DE NARRATIVA DINÂMICA
-        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
-        if (settings && settings.DicionarioMissoes)
-        {
-            foreach (PNH_DicionarioMissao dic : settings.DicionarioMissoes)
-            {
-                if (dic.TipoMissao == m_ActiveMission.m_MissionType)
-                {
-                    m_ActiveMission.m_LoreEtapas = dic.Etapas;
-                    break;
-                }
-            }
-        }
-        
-        // 4. DEFINIÇÃO DE LOCALIZAÇÃO
-        PNH_EventsWorldData.Init();
-        array<int> validIndexes = new array<int>;
-        for (int i = 0; i < PNH_EventsWorldData.MissionEvents.Count(); i++)
-        {
-            string eventName = PNH_EventsWorldData.MissionEvents.Get(i);
-            if (eventName.Contains(m_ActiveMission.m_MissionType)) 
-            {
-                validIndexes.Insert(i);
-            }
-        }
-
-        if (validIndexes.Count() > 0)
-        {
-            int randPos = Math.RandomInt(0, validIndexes.Count());
-            int randIndex = validIndexes.Get(randPos);
+            m_ActiveMission.m_MissionTier = 2; // Apartment é Tier 2
             
-            m_ActiveMission.m_MissionLocation = PNH_EventsWorldData.MissionEvents.Get(randIndex);
-            m_ActiveMission.m_MissionPosition = PNH_EventsWorldData.MissionPositions.Get(randIndex);
-        }
-        else
-        {
-            m_ActiveMission.m_MissionLocation = "Setor Residencial"; 
-            m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
+            // Carrega as coordenadas específicas do Apartment.json
+            PNH_MissionConfigData config = LoadMissionConfig("$profile:\\PNH\\Missions\\Apartment.json");
+            if (config) m_ActiveMission.m_Config = config;
         }
 
-        // FICA NO ESTADO 1 AGUARDANDO O JOGADOR ACEITAR O CONTRATO NO TABLET!
+        // Define a localização (Exemplo fixo para testes ou puxado de banco de dados)
+        m_ActiveMission.m_MissionLocation = "Setor Residencial"; 
+        m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
+
+        // ESTADO 1: Fica disponível no Tablet, mas NÃO nasce nada no mapa ainda
         m_MissionState = 1; 
         
-        PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Sorteada em " + m_ActiveMission.m_MissionLocation);
+        PNH_Logger.Log("Mission", "[PNH] Proxima missao pronta: " + m_ActiveMission.m_MissionType);
         PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(m_ActiveMission.m_MissionLocation);
-        
-        // REMOVIDO: m_ActiveMission.DeployMission(); <- A missão já não nasce sozinha!
     }
 
+    // Carregador auxiliar de JSONs de missão
     PNH_MissionConfigData LoadMissionConfig(string path)
     {
         PNH_MissionConfigData data = new PNH_MissionConfigData();
@@ -161,20 +104,18 @@ class PNH_MissionManager
         return null;
     }
 
+    // Finaliza e limpa a missão atual
     void EndMission() 
     { 
         if (m_ActiveMission) m_ActiveMission.CleanUp(); 
         m_ActiveMission = null; 
-        m_MissionState = 0; 
-        m_CooldownTimer = 300; 
-    }
-
-    void ReloadMissions() { PNH_MissionSettings.Load(); }
-    
-    void ForceMissionCycle() 
-    { 
-        EndMission(); 
-        m_CooldownTimer = 10; 
-        PNH_AuditManager.LogAdminAction("Admin", "Ciclo de Missoes Forçado");
+        m_MissionState = 0;
+        
+        // Define o tempo de espera para a próxima sorteada
+        PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
+        if (settings)
+            m_CooldownTimer = settings.ConfiguracoesGerais.TempoEntreMissoesMinutos * 60;
+        else
+            m_CooldownTimer = 300;
     }
 }

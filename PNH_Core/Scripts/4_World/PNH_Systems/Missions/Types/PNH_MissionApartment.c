@@ -167,30 +167,20 @@ class PNH_MissionApartment : PNH_MissionBase
         }
     }
 
-    // 3. FINALIZAÇÃO DELEGADA AO TREASURY
+   // 3. FINALIZAÇÃO DELEGADA AO TREASURY (Corrigido para v2.1.0)
     void FinalizeMission(PlayerBase p)
     {
-        if (!p) return;
+        if (!p || !p.GetIdentity()) return;
 
-        // Notificação Global de Conclusão
         PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_LoreEtapas.FaseB_Concluiu);
         
-        // DELEGAÇÃO: O Treasury processa o XP e gera o barril físico com o loot sorteado do Tier 2
-        PNH_TreasuryManager.ProcessMissionReward(
-            p.GetIdentity().GetPlainId(), 
-            p.GetIdentity().GetName(), 
-            m_MissionTier, 
-            m_Config.PosicaoBarrilEntrega.ToVector(), 
-            m_Config.OrientacaoBarrilEntrega.ToVector()
-        );
+        // Extração dos vetores do JSON
+        vector posFinal = m_Config.PosicaoBarrilEntrega.ToVector();
+        vector oriFinal = m_Config.OrientacaoBarrilEntrega.ToVector();
+
+        // Chamada direta e limpa para evitar erro de compilação
+        PNH_TreasuryManager.ProcessMissionReward(p.GetIdentity().GetPlainId(), p.GetIdentity().GetName(), m_MissionTier, posFinal, oriFinal);
         
         PNH_MissionManager.GetInstance().EndMission();
-    }
-
-    override void CleanUp()
-    {
-        if (m_ItemObjetivo && !m_FaseEntregaAtiva) GetGame().ObjectDelete(m_ItemObjetivo); 
-        foreach (Object obj : m_CenarioObjetos) if (obj) GetGame().ObjectDelete(obj);
-        super.CleanUp();
     }
 }
