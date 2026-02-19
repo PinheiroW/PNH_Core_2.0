@@ -1,11 +1,6 @@
 /// --- Documentação PNH_Core: PNH_MissionBase.c ---
-/// Versão do Sistema: 1.1.0 (Suporte à Narrativa Dinâmica)
-/// Função do arquivo: Definir a classe base (blueprint) para todas as missões, agora incluindo flags de controlo para mensagens de rádio por proximidade e suporte ao novo dicionário de etapas.
-/// Comunicação com outros arquivos: É estendido por missões como Horde.c e gerido pelo PNH_MissionManager.c. Utiliza o PNH_BroadcastManager.c para disparar as mensagens de rádio.
-/// Motivo da existência: Garantir que todas as missões herdem a lógica de estados e as flags de comunicação, evitando que mensagens de rádio sejam disparadas repetidamente.
-/// Dependências internas: PNH_MissionData.c (para a classe PNH_LoreEtapas).
-/// Última atualização: 2026-02-18
-/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+/// Versão do Sistema: 1.2.0 (Suporte à Narrativa Dinâmica e JSON Config)
+/// Função do arquivo: Definir a classe base (blueprint) para todas as missões.
 
 class PNH_MissionBase
 {
@@ -26,6 +21,9 @@ class PNH_MissionBase
     // --- SISTEMA DE NARRATIVA DINÂMICA ---
     string m_MissionInformant;
     ref PNH_LoreEtapas m_LoreEtapas; // Armazena os textos das 4 etapas
+    
+    // --- ADIÇÃO CRÍTICA PARA RESOLVER O CRASH: Variável de Configuração JSON ---
+    ref PNH_MissionConfigData m_Config; 
     
     // Flags de controlo para evitar repetição de rádio
     bool m_Msg90mSent;
@@ -64,7 +62,7 @@ class PNH_MissionBase
         return (m_MissionOwnerID == player.GetIdentity().GetPlainId());
     }
 
-    bool DeployMission() { return true; }
+    bool DeployMission() { return true; } 
     void MissionFinal() {}
     void MissionChecks() {}
 

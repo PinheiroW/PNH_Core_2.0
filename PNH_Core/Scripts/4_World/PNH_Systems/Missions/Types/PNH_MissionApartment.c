@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 1.2.0 (Otimização do Sistema de Inventário Enfusion)
+/// Versão do Sistema: 1.3.1 (Correção de Variável Inexistente)
 /// Função: Gerir a narrativa de infiltração, rastreio dinâmico do item e entrega final ao contato Boris.
 
 class PNH_MissionApartment : PNH_MissionBase
@@ -11,9 +11,9 @@ class PNH_MissionApartment : PNH_MissionBase
     protected bool m_FaseEntregaAtiva = false;
 
     // 1. MONTAGEM DA MISSÃO (Barricadas, Corpo e Inimigos)
-    override void Deploy()
+    override bool DeployMission()
     {
-        super.Deploy(); 
+        super.DeployMission(); 
 
         // --- SPAWN DO CENÁRIO (BARRICADAS) ---
         foreach (auto barricada : m_Config.Cenario.Barricadas)
@@ -56,6 +56,8 @@ class PNH_MissionApartment : PNH_MissionBase
         }
         
         PNH_Logger.Log("Mission", "[PNH] Infiltração Montada. Itens gerados: " + m_CenarioObjetos.Count());
+        
+        return true; 
     }
 
     override void MissionChecks()
@@ -74,8 +76,8 @@ class PNH_MissionApartment : PNH_MissionBase
         {
             if (m_ItemObjetivo.GetHierarchyRoot() != m_CorpoTraidor)
             {
+                // Apenas ativamos a Fase de Entrega através deste booleano
                 m_FaseEntregaAtiva = true;
-                m_MissionState = 2; 
                 
                 PNH_BroadcastManager.GetInstance().SendGlobalMessage(m_Config.Lore.MensagemFaseB + m_Config.CidadeEntrega);
                 SpawnNPCEntrega();
