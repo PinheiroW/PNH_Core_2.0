@@ -1,6 +1,7 @@
 /// --- Documentação PNH_Core: PNH_ChatManager.c ---
-/// Versão do Sistema: 1.2.1 (Correção de Compilação - Comando Reload)
-/// Função: Processar comandos de chat e interface administrativa. Agora sincronizado com o MissionManager v2.1.6.
+/// Versão do Sistema: 1.2.2 (Correção de Variáveis e Sincronização de Métodos)
+/// Função: Processar comandos de chat e interface administrativa.
+/// Correção: Sincronizado com PNH_Utils.c (PlayerName) e PNH_MissionManager.c (ReloadMissions/ForceMissionCycle).
 
 class PNH_ChatManager
 {
@@ -30,11 +31,12 @@ class PNH_ChatManager
                 PNH_Utils.SendMessage(player, "=== STATUS DO OPERADOR ===");
                 
                 string msgOp = settings.Textos.Msg_StatusOperador;
-                msgOp.Replace("%1", pData.Nome);
+                // CORREÇÃO: Utiliza PlayerName para coincidir com a classe em PNH_Utils.c
+                msgOp.Replace("%1", pData.PlayerName); 
                 PNH_Utils.SendMessage(player, msgOp);
 
                 string msgPat = settings.Textos.Msg_StatusPatente;
-                msgPat.Replace("%1", pData.Patente);
+                msgPat.Replace("%1", pData.Patente.ToString());
                 PNH_Utils.SendMessage(player, msgPat);
 
                 string msgXP = settings.Textos.Msg_StatusXP;
@@ -43,10 +45,11 @@ class PNH_ChatManager
 
                 if (pData.TemMissaoAtiva && mngr.m_ActiveMission)
                 {
-                    string loc = mngr.m_ActiveMission.m_MissionLocation;
-                    PNH_Utils.SendMessage(player, "=== CONTRATO EM CURSO ===");
-                    PNH_Utils.SendMessage(player, "Local: " + loc);
+                    PNH_Utils.SendMessage(player, "=== CONTRATO ATIVO ===");
+                    PNH_Utils.SendMessage(player, "Alvo: " + mngr.m_ActiveMission.m_MissionLocation);
                     PNH_Utils.SendMessage(player, "Informante: " + mngr.m_ActiveMission.m_MissionInformant);
+                    
+                    // A Lore é puxada das Etapas configuradas no JSON
                     PNH_Utils.SendMessage(player, "- " + mngr.m_ActiveMission.m_LoreEtapas.Aceitou);
                 }
                 else
@@ -68,25 +71,20 @@ class PNH_ChatManager
         // --- COMANDO !reload_mission (ADMIN: Recarrega JSON e Reinicia Ciclo) ---
         if (command == "reload_mission")
         {
-            string adminId = player.GetIdentity().GetPlainId();
-            
-            // Verifica se o jogador é Super Admin
-            if (PNH_CoreConfig.IsSuperAdmin(adminId))
+            if (PNH_CoreConfig.IsSuperAdmin(player.GetIdentity().GetPlainId()))
             {
-                // Recarrega o ficheiro físico JSON para a memória
-                PNH_MissionSettings.Load();
-                
                 PNH_MissionManager manager = PNH_MissionManager.GetInstance();
                 if (manager)
                 {
-                    // Encerra a missão atual (se houver) e reseta os timers do gestor
-                    manager.EndMission();
-                    PNH_Utils.SendMessage(player, "[PNH CORE] JSON Recarregado e Ciclo de Missoes Reiniciado.");
+                    // Sincronizado com os métodos de suporte do PNH_MissionManager.c v2.1.7
+                    manager.ReloadMissions();
+                    manager.ForceMissionCycle();
+                    PNH_Utils.SendMessage(player, "[PNH CORE] Configuracoes recarregadas e ciclo reiniciado.");
                 }
             }
             else
             {
-                PNH_Utils.SendMessage(player, "[ERRO] Voce nao possui permissao de Admin para isto.");
+                PNH_Utils.SendMessage(player, "[ERRO] Sem permissao de Admin.");
             }
             return true;
         }

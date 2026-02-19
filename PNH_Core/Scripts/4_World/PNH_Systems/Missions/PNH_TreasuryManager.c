@@ -1,6 +1,10 @@
+/// --- Documentação PNH_Core: PNH_TreasuryManager.c ---
+/// Versão do Sistema: 2.1.5 (Proteção de Loot e Sincronização de 5 Parâmetros)
+/// Função: Único ponto de distribuição de recompensas (XP + Loot Físico).
+
 class PNH_TreasuryManager
 {
-    // Agora aceita os 5 parâmetros necessários para as missões Apartment e Horde
+    // Função principal: Agora aceita os 5 parâmetros para casar com MissionManager e Missões
     static void ProcessMissionReward(string steamID, string playerName, int tier, vector pos = "0 0 0", vector ori = "0 0 0")
     {
         PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(steamID, playerName);
@@ -8,6 +12,7 @@ class PNH_TreasuryManager
         
         if (!pData || !settings) return;
 
+        // 1. Processamento de XP baseado no Tier configurado no JSON
         int rewardXP = 0;
         if (tier == 1)      rewardXP = settings.TabelaXP.XP_Tier_1;
         else if (tier == 2) rewardXP = settings.TabelaXP.XP_Tier_2;
@@ -19,8 +24,13 @@ class PNH_TreasuryManager
         pData.ClasseMissaoAtiva = "";
         PNH_ProfileManager.SaveProfile(pData);
         
-        if (pos != "0 0 0") GeneratePhysicalReward(pos, ori, tier, settings);
+        // 2. Materialização do Barril apenas se houver uma posição válida
+        if (pos != "0 0 0")
+        {
+            GeneratePhysicalReward(pos, ori, tier, settings);
+        }
 
+        // 3. Notificação ao Jogador
         PlayerBase player = PNH_Utils.GetPlayerByName(playerName);
         if (player)
         {
@@ -32,10 +42,13 @@ class PNH_TreasuryManager
 
     protected static void GeneratePhysicalReward(vector pos, vector ori, int tier, PNH_MissionSettingsData settings)
     {
+        // Cria o barril na posição e orientação enviadas pela missão
         EntityAI container = EntityAI.Cast(GetGame().CreateObject("Barrel_Blue", pos));
         if (!container) return;
+
         container.SetOrientation(ori);
 
+        // Seleciona a pool de loot correta baseada no Tier da missão
         array<ref PNH_LootItem> pool;
         if (tier == 1)      pool = settings.Loot_Tier1;
         else if (tier == 2) pool = settings.Loot_Tier2;
@@ -46,15 +59,20 @@ class PNH_TreasuryManager
 
         foreach (PNH_LootItem entry : pool)
         {
-            // PROTEÇÃO CONTRA CRASH: Se o nome do item no JSON estiver errado, o servidor ignora em vez de crashar
-            if (entry.Item == "" || !GetGame().ConfigIsExisting("CfgVehicles " + entry.Item)) continue;
-
-            if (Math.RandomInt(0, 100) <= entry.Chance)
+            // PROTEÇÃO CONTRA CRASH: Verifica se o item existe na config do jogo antes de o criar
+            if (entry.Item != "" && (GetGame().ConfigIsExisting("CfgVehicles " + entry.Item) || GetGame().ConfigIsExisting("CfgWeapons " + entry.Item) || GetGame().ConfigIsExisting("CfgMagazines " + entry.Item)))
             {
-                for (int i = 0; i < entry.Quantidade; i++) 
+                if (Math.RandomInt(0, 100) <= entry.Chance)
                 {
-                    container.GetInventory().CreateInInventory(entry.Item);
+                    for (int i = 0; i < entry.Quantidade; i++) 
+                    {
+                        container.GetInventory().CreateInInventory(entry.Item);
+                    }
                 }
+            }
+            else if (entry.Item != "")
+            {
+                PNH_Logger.Log("Treasury", "[ERRO] Nome de item invalido no JSON: " + entry.Item);
             }
         }
     }

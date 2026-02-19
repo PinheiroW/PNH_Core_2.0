@@ -1,5 +1,6 @@
-/// --- PNH_MissionManager.c (v2.1.6 - CORRIGIDO) ---
+/// --- PNH_MissionManager.c (v2.1.7 - FINAL) ---
 /// Função: Centralizar o sorteio, estados e limpeza das missões no servidor.
+/// Correção: Removida classe PNH_MissionSettings duplicada e adicionados métodos de suporte ao Chat.
 
 class PNH_MissionManager
 {
@@ -63,33 +64,44 @@ class PNH_MissionManager
     {
         if (m_ActiveMission) return;
 
-        // Sorteio Simples (Exemplo: 50% de chance para cada tipo disponível)
         int dice = Math.RandomInt(0, 100);
         
         if (dice < 50)
         {
             m_ActiveMission = new HordeMission();
-            m_ActiveMission.m_MissionTier = 1; // Horda é Tier 1
+            m_ActiveMission.m_MissionTier = 1; 
         }
         else
         {
             m_ActiveMission = new PNH_MissionApartment();
-            m_ActiveMission.m_MissionTier = 2; // Apartment é Tier 2
+            m_ActiveMission.m_MissionTier = 2; 
             
             // Carrega as coordenadas específicas do Apartment.json
             PNH_MissionConfigData config = LoadMissionConfig("$profile:\\PNH\\Missions\\Apartment.json");
             if (config) m_ActiveMission.m_Config = config;
         }
 
-        // Define a localização (Exemplo fixo para testes ou puxado de banco de dados)
         m_ActiveMission.m_MissionLocation = "Setor Residencial"; 
         m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
 
-        // ESTADO 1: Fica disponível no Tablet, mas NÃO nasce nada no mapa ainda
-        m_MissionState = 1; 
+        m_MissionState = 1; // Fica disponível no Tablet
         
         PNH_Logger.Log("Mission", "[PNH] Proxima missao pronta: " + m_ActiveMission.m_MissionType);
         PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(m_ActiveMission.m_MissionLocation);
+    }
+
+    // --- MÉTODOS DE SUPORTE AO CHAT (ADMIN) ---
+    
+    // Recarrega o JSON de missões sem reiniciar o servidor
+    void ReloadMissions()
+    {
+        PNH_MissionSettings.Load();
+    }
+
+    // Força o encerramento da missão atual e reinicia o ciclo
+    void ForceMissionCycle()
+    {
+        EndMission();
     }
 
     // Carregador auxiliar de JSONs de missão
@@ -111,7 +123,6 @@ class PNH_MissionManager
         m_ActiveMission = null; 
         m_MissionState = 0;
         
-        // Define o tempo de espera para a próxima sorteada
         PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
         if (settings)
             m_CooldownTimer = settings.ConfiguracoesGerais.TempoEntreMissoesMinutos * 60;

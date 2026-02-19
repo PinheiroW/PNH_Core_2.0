@@ -1,14 +1,11 @@
 /// --- Documentação PNH_Core: PNH_Utils.c ---
-/// Versão do Sistema: 1.1.0 (Refatoração de Progressão)
-/// Função do arquivo: Centralizar funções utilitárias estáticas e gerir o sistema de perfis (PNH_PlayerProfileData), incluindo agora a lógica de promoção automática com notificações visuais.
-/// Comunicação com outros arquivos: Providencia dados de perfil para o PNH_ChatManager.c, valida recompensas para o PNH_TreasuryManager.c e utiliza o PNH_BroadcastManager.c para anúncios de patente[cite: 21, 28, 15].
-/// Motivo da existência: Garantir a persistência de progresso e fornecer ferramentas que simplificam a comunicação entre os Managers.
-/// Dependências internas: PNH_MissionSettings.c (para consulta da TabelaXP) e PNH_BroadcastManager.c (para notificações de promoção)[cite: 31, 15].
-/// Última atualização: 2026-02-18
-/// IMPORTANTE: Ao alterar este arquivo, documente no CHANGELOG_PNH.md
+/// Versão do Sistema: 1.1.1 (Sincronização Total com Chat e Treasury)
+/// Função: Centralizar funções utilitárias e gerir os perfis dos jogadores (.json).
+/// Correção: Garantida a variável 'PlayerName' para compatibilidade com ChatManager v1.2.2.
 
 class PNH_Utils
 {
+    // Envia mensagem para todos os jogadores online
     static void SendMessageToAll(string message)
     {
         array<Man> players = new array<Man>;
@@ -21,6 +18,7 @@ class PNH_Utils
         }
     }
 
+    // Envia mensagem via RPC (Chat) para um jogador específico
     static void SendMessage(PlayerBase player, string message)
     {
         if (player && player.GetIdentity())
@@ -42,6 +40,7 @@ class PNH_Utils
         return "";
     }
 
+    // Procura um jogador online pelo nome (parcial)
     static PlayerBase GetPlayerByName(string name)
     {
         if (name == "") return null;
@@ -62,6 +61,7 @@ class PNH_Utils
     }
 }
 
+// ESTRUTURA DE DADOS DO PERFIL (Garantir 'PlayerName' para o ChatManager)
 class PNH_PlayerProfileData {
     string PlayerName;
     string SteamID;
@@ -80,6 +80,7 @@ class PNH_PlayerProfileData {
     }
 }
 
+// GESTOR DE FICHEIROS DE PERFIL
 class PNH_ProfileManager {
     static string m_ProfilesDir = "$profile:PNH/PlayerData/";
 
@@ -87,9 +88,11 @@ class PNH_ProfileManager {
         if (id == "") return null;
         string filePath = m_ProfilesDir + id + ".json";
         if (!FileExist(m_ProfilesDir)) MakeDirectory(m_ProfilesDir);
+        
         PNH_PlayerProfileData data = new PNH_PlayerProfileData(name, id);
         if (FileExist(filePath)) {
             JsonFileLoader<PNH_PlayerProfileData>.JsonLoadFile(filePath, data);
+            // Atualiza o nome se o jogador mudou de nome na Steam
             if (data.PlayerName != name) {
                 data.PlayerName = name;
                 SaveProfile(data);
@@ -106,26 +109,7 @@ class PNH_ProfileManager {
         JsonFileLoader<PNH_PlayerProfileData>.JsonSaveFile(filePath, data);
     }
 
-    static void AddXP(PlayerBase player, int amount) {
-        if (!player || !player.GetIdentity()) return;
-        PNH_PlayerProfileData data = LoadProfile(player.GetIdentity().GetPlainId(), player.GetIdentity().GetName());
-        if (!data) return;
-        data.XP += amount;
-        CheckRankUpdate(data, player);
-        SaveProfile(data);
-    }
-
-    static void RemoveXP(PlayerBase player, int amount) {
-        if (!player || !player.GetIdentity()) return;
-        PNH_PlayerProfileData data = LoadProfile(player.GetIdentity().GetPlainId(), player.GetIdentity().GetName());
-        if (!data) return;
-        data.XP -= amount;
-        if (data.XP < 0) data.XP = 0; 
-        CheckRankUpdate(data, player); 
-        SaveProfile(data);
-    }
-
-    // --- LOGICA DE PROGRESSÃO REFORMULADA ---
+    // LÓGICA DE PROMOÇÃO AUTOMÁTICA
     static void CheckRankUpdate(PNH_PlayerProfileData data, PlayerBase player) {
         PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
         if (!settings || !player) return;
@@ -133,29 +117,22 @@ class PNH_ProfileManager {
         int oldRank = data.Patente;
         int newRank = 1;
 
+        // Valida contra os valores de XP definidos no PNH_MissionSettings.json
         if (data.XP >= settings.TabelaXP.XP_Lenda) newRank = 4;
         else if (data.XP >= settings.TabelaXP.XP_Especialista) newRank = 3;
         else if (data.XP >= settings.TabelaXP.XP_Mercenario) newRank = 2;
         else newRank = 1;
 
-        // Se houver mudança de patente, notifica o jogador
         if (newRank != oldRank)
         {
             data.Patente = newRank;
             string rankName = "Recruta";
-            if (newRank == 2) rankName = "Mercenario";
+            if (newRank == 2)      rankName = "Mercenario";
             else if (newRank == 3) rankName = "Especialista";
             else if (newRank == 4) rankName = "Lenda";
 
             PNH_BroadcastManager.GetInstance().SendNotificationToPlayer(player, "PROMOÇÃO PNH", "Parabens! Sua patente subiu para: " + rankName, 10.0, "Notifications/gui/data/warning.edds");
-            PNH_Logger.Log("Profile", "[PNH] Jogador " + data.PlayerName + " subiu para a patente: " + rankName);
+            PNH_Logger.Log("Profile", "[PNH] Operador " + data.PlayerName + " promovido a " + rankName);
         }
-    }
-    
-    static int GetPlayerRank(PlayerBase player) {
-        if (!player || !player.GetIdentity()) return 1;
-        PNH_PlayerProfileData data = LoadProfile(player.GetIdentity().GetPlainId(), player.GetIdentity().GetName());
-        if (data) return data.Patente;
-        return 1;
     }
 }
