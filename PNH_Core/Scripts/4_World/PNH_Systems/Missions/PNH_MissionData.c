@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionData.c ---
-/// Versão do Sistema: 2.2.0 (Suporte Completo para Narrativas de Infiltração e Cenas Dinâmicas)
+/// Versão do Sistema: 2.3.0 (Estrutura de Diálogos por Fases A e B)
 /// Função do arquivo: Definir as classes de dados e modelos (Data Models) para o ficheiro PNH_MissionSettings.json e configurações individuais de missões (Ex: Apartment.json).
 
 // =========================================================================
@@ -58,19 +58,14 @@ class PNH_RecompensasConfig
 class PNH_LoreApartment 
 {
     string Informante;
-    ref array<string> NomesSobreviventes;
-    ref array<string> MensagensRadio;
-    string MensagemAproximacao;
-    string MensagemNoObjetivo;
-    string MensagemFaseB;
-    string MensagemAproximacaoEntrega;
-    string MensagemNoObjetivoEntrega;
+    ref array<string> MensagensFaseA; // Os 3 textos da infiltração
+    ref array<string> MensagensFaseB; // Os 3 textos da extração
     string MensagemVitoria;
 
     void PNH_LoreApartment()
     {
-        NomesSobreviventes = new array<string>;
-        MensagensRadio = new array<string>;
+        MensagensFaseA = new array<string>;
+        MensagensFaseB = new array<string>;
     }
 }
 

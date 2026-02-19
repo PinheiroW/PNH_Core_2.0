@@ -1,74 +1,108 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 1.3.2 (Correção da Chamada de Broadcast)
-/// Função: Gerir a narrativa de infiltração, rastreio dinâmico do item e entrega final ao contato Boris.
+/// Versão do Sistema: 2.0.0 (Engenharia Reversa: ModelToWorld, Portas, 3 Diálogos de Rádio e Extração do Boris)
+/// Função: A missão só nasce quando é aceita. O prédio tranca, o cenário é gerado perfeitamente e o jogador deve extrair o livro para Green Mountain.
 
 class PNH_MissionApartment : PNH_MissionBase
 {
     protected ref array<Object> m_CenarioObjetos = new array<Object>;
+    protected Object m_MissionBuilding; // Variável que detém o prédio original no mapa
     protected EntityAI m_CorpoTraidor;
     protected EntityAI m_NPCEntrega;
-    protected EntityAI m_ItemObjetivo; // Rastreia fisicamente o Livro da Missão
+    protected EntityAI m_ItemObjetivo; 
     protected bool m_FaseEntregaAtiva = false;
 
-    // 1. MONTAGEM DA MISSÃO (Barricadas, Corpo e Inimigos)
+    // A missão AGORA SÓ NASCE quando o jogador aceita o contrato
     override bool DeployMission()
     {
         super.DeployMission(); 
 
-        // --- SPAWN DO CENÁRIO (BARRICADAS) ---
-        foreach (auto barricada : m_Config.Cenario.Barricadas)
+        // 1. PROCURA PELO PRÉDIO EXATO NO MAPA (Engenharia do Mod Original)
+        array<Object> objList = new array<Object>;
+        array<CargoBase> cargoList = new array<CargoBase>;
+        GetGame().GetObjectsAtPosition(m_MissionPosition, 1.0, objList, cargoList);
+        
+        for (int i = 0; i < objList.Count(); i++)
         {
-            vector posMundo = m_MissionPosition + barricada.PosicaoLocal.ToVector();
-            Object obj = GetGame().CreateObjectEx(barricada.Classe, posMundo, ECE_CREATEPHYSICS);
-            if (obj) 
+            if (objList.Get(i).GetType() == "Land_Tenement_Small")
             {
-                obj.SetOrientation(barricada.OrientacaoLocal.ToVector());
-                m_CenarioObjetos.Insert(obj);
+                m_MissionBuilding = objList.Get(i);
+                break;
             }
         }
 
-        // --- SPAWN DO TRAIDOR E DO ITEM ---
-        vector posCorpo = m_MissionPosition + m_Config.PosicaoCorpoLocal.ToVector();
-        m_CorpoTraidor = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseCorpo, posCorpo));
-        if (m_CorpoTraidor)
+        if (m_MissionBuilding)
         {
-            m_CorpoTraidor.SetOrientation(m_Config.OrientacaoCorpoLocal.ToVector());
-            m_CenarioObjetos.Insert(m_CorpoTraidor);
+            // 2. FECHA TODAS AS PORTAS E ATUALIZA NAVEGAÇÃO DOS ZUMBIS
+            Building Tenement = Building.Cast(m_MissionBuilding);
+            for (int k = 0; k < 32; k++)
+            {
+                if (Tenement.IsDoorOpen(k)) Tenement.CloseDoor(k);
+            }
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(GetGame().UpdatePathgraphRegionByObject, 1000, false, Tenement);
+
+            // 3. SPAWN DO CENÁRIO COM MODELTOWORLD (As barricadas agora ficam perfeitas nas janelas)
+            foreach (auto barricada : m_Config.Cenario.Barricadas)
+            {
+                vector bPos = m_MissionBuilding.ModelToWorld(barricada.PosicaoLocal.ToVector());
+                vector bOri = barricada.OrientacaoLocal.ToVector();
+                vector bDir = m_MissionBuilding.GetDirection();
+                
+                Object obj = GetGame().CreateObjectEx(barricada.Classe, bPos, ECE_CREATEPHYSICS);
+                if (obj) 
+                {
+                    obj.SetPosition(bPos);
+                    obj.SetDirection(bDir);
+                    obj.SetOrientation(obj.GetOrientation() + bOri);
+                    m_CenarioObjetos.Insert(obj);
+                }
+            }
+
+            // 4. SPAWN DO TRAIDOR E DO ITEM
+            vector posCorpo = m_MissionBuilding.ModelToWorld(m_Config.PosicaoCorpoLocal.ToVector());
+            m_CorpoTraidor = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseCorpo, posCorpo));
+            if (m_CorpoTraidor)
+            {
+                m_CorpoTraidor.SetDirection(m_MissionBuilding.GetDirection());
+                m_CorpoTraidor.SetOrientation(m_CorpoTraidor.GetOrientation() + m_Config.OrientacaoCorpoLocal.ToVector());
+                
+                // O Traidor recebe as roupas para ter onde guardar o livro
+                foreach (string roupaNPC : m_Config.RoupasNPC) m_CorpoTraidor.GetInventory().CreateInInventory(roupaNPC);
+                foreach (string itemNPC : m_Config.InventarioNPC) m_CorpoTraidor.GetInventory().CreateInInventory(itemNPC);
+
+                m_CenarioObjetos.Insert(m_CorpoTraidor);
+                
+                // O servidor guarda a identidade do livro para não dar lag a procurar nas mochilas dos jogadores
+                m_ItemObjetivo = m_CorpoTraidor.GetInventory().CreateInInventory(m_Config.ItemMissao);
+            }
+
+            // 5. SPAWN DA HORDA INTERNA COM MODELTOWORLD
+            foreach (string posZmb : m_Config.SpawnsZumbisInternos)
+            {
+                vector posZmbMundo = m_MissionBuilding.ModelToWorld(posZmb.ToVector());
+                GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), posZmbMundo);
+            }
+
+            // 6. DISPARA O RÁDIO DE INFILTRAÇÃO (3 MENSAGENS COMPASSADAS)
+            PNH_BroadcastManager.GetInstance().DeliverMissionBriefing(m_Config.Lore.Informante, m_Config.Lore.MensagensFaseA);
             
-            // Cria e GRAVA a referência exata do item da missão no mundo
-            m_ItemObjetivo = m_CorpoTraidor.GetInventory().CreateInInventory(m_Config.ItemMissao);
+            PNH_Logger.Log("Mission", "[PNH] Infiltração Montada. Itens gerados: " + m_CenarioObjetos.Count());
+            return true; 
         }
-
-        // --- SPAWN DO ASSASSINO (ZUMBI ALVO) ---
-        vector posZmbAlvo = m_MissionPosition + m_Config.PosicaoZumbiAssassinoLocal.ToVector();
-        EntityAI assassin = EntityAI.Cast(GetGame().CreateObject(m_Config.ClasseZumbiAssassino, posZmbAlvo));
-        if (assassin)
+        else 
         {
-            foreach (string roupaNPC : m_Config.RoupasNPC) assassin.GetInventory().CreateInInventory(roupaNPC);
-            foreach (string itemNPC : m_Config.InventarioNPC) assassin.GetInventory().CreateInInventory(itemNPC);
+            PNH_Logger.Log("Mission", "[PNH] ERRO CRÍTICO: Prédio Land_Tenement_Small não encontrado nas coordenadas!");
+            return false;
         }
-
-        // --- SPAWN DA HORDA INTERNA ---
-        foreach (string posZmb : m_Config.SpawnsZumbisInternos)
-        {
-            vector posZmbMundo = m_MissionPosition + posZmb.ToVector();
-            GetGame().CreateObject(m_Config.Dificuldade.ClassesZumbis.GetRandomElement(), posZmbMundo);
-        }
-        
-        PNH_Logger.Log("Mission", "[PNH] Infiltração Montada. Itens gerados: " + m_CenarioObjetos.Count());
-        
-        return true; 
     }
 
     override void MissionChecks()
     {
         super.MissionChecks();
-
         if (!m_FaseEntregaAtiva) CheckItemDiscovery();
         else CheckDeliveryPoint();
     }
 
-    // Verifica se o livro foi roubado/retirado do corpo
+    // Verifica se o livro foi retirado do corpo
     void CheckItemDiscovery()
     {
         if (m_ItemObjetivo && m_CorpoTraidor)
@@ -77,8 +111,9 @@ class PNH_MissionApartment : PNH_MissionBase
             {
                 m_FaseEntregaAtiva = true;
                 
-                // CORREÇÃO: Utilizando 'BroadcastGlobal' conforme o PNH_BroadcastManager.c do teu repositório
-                PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_Config.Lore.MensagemFaseB + m_Config.CidadeEntrega);
+                // DISPARA O RÁDIO DE EXTRAÇÃO (3 MENSAGENS COMPASSADAS)
+                PNH_BroadcastManager.GetInstance().DeliverMissionBriefing(m_Config.Lore.Informante, m_Config.Lore.MensagensFaseB);
+                
                 SpawnNPCEntrega();
             }
         }
@@ -94,16 +129,15 @@ class PNH_MissionApartment : PNH_MissionBase
         }
     }
 
+    // Verifica se o jogador com o livro chegou ao pé do Boris
     void CheckDeliveryPoint()
     {
         if (m_ItemObjetivo)
         {
             float distToBoris = vector.Distance(m_ItemObjetivo.GetPosition(), m_Config.PosicaoEntrega.ToVector());
-            
             if (distToBoris < 3.0)
             {
-                GetGame().ObjectDelete(m_ItemObjetivo); 
-                
+                GetGame().ObjectDelete(m_ItemObjetivo); // Entrega o livro ao Boris
                 array<Man> players = new array<Man>;
                 GetGame().GetPlayers(players);
                 PlayerBase winner = null;
@@ -116,7 +150,6 @@ class PNH_MissionApartment : PNH_MissionBase
                         break;
                     }
                 }
-                
                 FinalizeMission(winner);
             }
         }
@@ -124,11 +157,14 @@ class PNH_MissionApartment : PNH_MissionBase
 
     void FinalizeMission(PlayerBase p)
     {
-        // CORREÇÃO: Utilizando 'BroadcastGlobal'
         PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_Config.Lore.MensagemVitoria);
         
         EntityAI container = EntityAI.Cast(GetGame().CreateObject(m_Config.RecompensasHorda.Container, m_Config.PosicaoBarrilEntrega.ToVector()));
-        if (container) container.SetOrientation(m_Config.OrientacaoBarrilEntrega.ToVector());
+        if (container) 
+        {
+            container.SetOrientation(m_Config.OrientacaoBarrilEntrega.ToVector());
+            m_CenarioObjetos.Insert(container); 
+        }
         
         PNH_MissionManager.GetInstance().EndMission();
     }

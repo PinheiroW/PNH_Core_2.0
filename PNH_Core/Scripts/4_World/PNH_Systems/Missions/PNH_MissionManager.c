@@ -1,6 +1,6 @@
 /// --- Documentação PNH_Core: PNH_MissionManager.c ---
-/// Versão do Sistema: 2.1.0 (Suporte a Narrativas Dinâmicas e Carregamento de JSON Externo)
-/// Funções atualizadas: StartRandomMission agora carrega configurações específicas de cada tipo de missão.
+/// Versão do Sistema: 2.1.4 (Remoção do Deploy Automático)
+/// Funções atualizadas: A missão agora APENAS nasce no mapa após ser aceita via Tablet/Broker.
 
 class PNH_MissionManager
 {
@@ -39,9 +39,9 @@ class PNH_MissionManager
                     m_CooldownTimer -= 2; 
                     if (m_CooldownTimer <= 0) StartRandomMission(); 
                     break;
-                case 1: // DISPONÍVEL
+                case 1: // DISPONÍVEL (Aguardando alguém aceitar no Tablet)
                     break;
-                case 2: // MATERIALIZANDO
+                case 2: // MATERIALIZANDO (Broker chamou o DeployMission)
                     m_ActiveMission.m_MissionTime += 2;
                     if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, 15)) 
                     {
@@ -49,7 +49,7 @@ class PNH_MissionManager
                         PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Vigilancia Ativada");
                     }
                     break;
-                case 3: // ATIVA
+                case 3: // ATIVA (Em andamento no mapa)
                     m_ActiveMission.m_MissionTime += 2;
                     if (PNH_TimeManager.HasTimeElapsed(m_ActiveMission.m_MissionTime, m_ActiveMission.m_MissionTimeout)) 
                     {
@@ -65,7 +65,6 @@ class PNH_MissionManager
         }
     }
 
-    // --- CORREÇÃO: LÓGICA DE SORTEIO E CARREGAMENTO DE CONFIGURAÇÃO ---
     void StartRandomMission()
     {
         float randType = Math.RandomFloat(0, 1);
@@ -77,14 +76,14 @@ class PNH_MissionManager
             m_ActiveMission = new PNH_MissionApartment();
             m_ActiveMission.m_MissionType = "Apartment";
             m_ActiveMission.m_MissionTier = 2;
-            jsonPath = "$profile:PNH_Settings/Missions/Apartment.json"; // Caminho para o JSON de Infiltração
+            jsonPath = "$profile:PNH/Missions/Apartment.json"; 
         }
         else
         {
             m_ActiveMission = new HordeMission(); 
             m_ActiveMission.m_MissionType = "Horde";
             m_ActiveMission.m_MissionTier = 1;
-            jsonPath = "$profile:PNH_Settings/Missions/Horde.json"; // Caminho para o JSON de Horda
+            jsonPath = "$profile:PNH/Missions/Horde.json"; 
         }
 
         // 2. CARREGAMENTO DA CONFIGURAÇÃO ESPECÍFICA DO JSON
@@ -97,10 +96,12 @@ class PNH_MissionManager
         else 
         {
             PNH_Logger.Log("Manager", "[PNH] Erro Crítico: Arquivo de configuração não encontrado em " + jsonPath);
+            m_CooldownTimer = 60; 
+            m_ActiveMission = null;
             return; 
         }
 
-        // 3. INJEÇÃO DE NARRATIVA DINÂMICA (PNH_MissionSettings)
+        // 3. INJEÇÃO DE NARRATIVA DINÂMICA
         PNH_MissionSettingsData settings = PNH_MissionSettings.GetData();
         if (settings && settings.DicionarioMissoes)
         {
@@ -140,16 +141,15 @@ class PNH_MissionManager
             m_ActiveMission.m_MissionPosition = "4400.5 7.3 2517.7".ToVector();
         }
 
+        // FICA NO ESTADO 1 AGUARDANDO O JOGADOR ACEITAR O CONTRATO NO TABLET!
         m_MissionState = 1; 
         
         PNH_AuditManager.LogMissionEvent("Sistema", m_ActiveMission.m_MissionType, "Sorteada em " + m_ActiveMission.m_MissionLocation);
         PNH_BroadcastManager.GetInstance().AnnounceMissionAvailable(m_ActiveMission.m_MissionLocation);
         
-        // Inicia a execução do cenário
-        m_ActiveMission.Deploy();
+        // REMOVIDO: m_ActiveMission.DeployMission(); <- A missão já não nasce sozinha!
     }
 
-    // Função auxiliar para carregar o arquivo JSON de configuração da missão
     PNH_MissionConfigData LoadMissionConfig(string path)
     {
         PNH_MissionConfigData data = new PNH_MissionConfigData();
