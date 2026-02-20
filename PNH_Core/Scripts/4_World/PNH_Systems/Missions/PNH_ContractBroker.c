@@ -46,7 +46,7 @@ class PNH_ContractBroker
         PNH_PlayerProfileData pData = PNH_ProfileManager.LoadProfile(plainId, pName);
         
         string missionType = manager.m_ActiveMission.m_MissionType;
-        bool podeAceitar = false;
+        bool podeAceitar = true;
 
         if (pData.Patente >= 1 && settings.CatalogoMissoes.Tier1_Recruta.Find(missionType) != -1) podeAceitar = true;
         else if (pData.Patente >= 2 && settings.CatalogoMissoes.Tier2_Mercenario.Find(missionType) != -1) podeAceitar = true;

@@ -1,5 +1,5 @@
 /// --- Documentação PNH_Core: PNH_MissionApartment.c ---
-/// Versão do Sistema: 2.2.3 (Correção do Motor DayZ - Identificação de Jogador)
+/// Versão do Sistema: 2.2.0 (Integração com Agente Treasury: XP + Loot Centralizado)
 /// Função: Gerir a narrativa de infiltração e extração. A entrega final é agora processada pelo TreasuryManager.
 
 class PNH_MissionApartment : PNH_MissionBase
@@ -86,8 +86,7 @@ class PNH_MissionApartment : PNH_MissionBase
     {
         super.MissionChecks();
         
-        // CORREÇÃO CRÍTICA: Substitui a função inexistente no motor pela função do utilitário que criámos
-        PlayerBase owner = PNH_Utils.GetPlayerByName(m_MissionOwnerName);
+        PlayerBase owner = PNH_Utils.GetPlayerByName(m_MissionOwnerName); // Correto: existe no seu PNH_Utils.c
         if (!owner) return;
 
         float dist;
@@ -168,33 +167,21 @@ class PNH_MissionApartment : PNH_MissionBase
         }
     }
 
-    // 3. FINALIZAÇÃO DELEGADA AO TREASURY
+   // 3. FINALIZAÇÃO DELEGADA AO TREASURY (Corrigido para v2.1.0)
     void FinalizeMission(PlayerBase p)
     {
         if (!p || !p.GetIdentity()) return;
 
         PNH_BroadcastManager.GetInstance().BroadcastGlobal(m_LoreEtapas.FaseB_Concluiu);
         
-        // Extração segura dos vetores
+        string uid = p.GetIdentity().GetPlainId();
+        string name = p.GetIdentity().GetName();
         vector pBarril = m_Config.PosicaoBarrilEntrega.ToVector();
         vector oBarril = m_Config.OrientacaoBarrilEntrega.ToVector();
 
-        // Chamada compatível com os 5 parâmetros do Treasury v2.1.5
-        PNH_TreasuryManager.ProcessMissionReward(
-            p.GetIdentity().GetPlainId(), 
-            p.GetIdentity().GetName(), 
-            m_MissionTier, 
-            pBarril, 
-            oBarril
-        );
+        // Chamada em linha única ou com variáveis locais auxiliares para garantir a leitura
+        PNH_TreasuryManager.ProcessMissionReward(uid, name, m_MissionTier, pBarril, oBarril);
         
         PNH_MissionManager.GetInstance().EndMission();
-    }
-
-    override void CleanUp()
-    {
-        if (m_ItemObjetivo && !m_FaseEntregaAtiva) GetGame().ObjectDelete(m_ItemObjetivo); 
-        foreach (Object obj : m_CenarioObjetos) if (obj) GetGame().ObjectDelete(obj);
-        super.CleanUp();
     }
 }
